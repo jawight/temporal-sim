@@ -1,7 +1,36 @@
-@import "bootstrap/dist/css/bootstrap.min.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 body {
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
+}
+
+
+.spin-target {
+    transform-origin: center;
+    animation: spin-to-stop 3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes spin-to-stop {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        /* Spinning 3 full rotations + landing at 0 */
+        transform: rotate(1080deg); 
+    }
+}
+
+/* HTML: <div class="loader"></div> */
+.polling-symbol {
+    width: 20px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #adc6ff;
+    box-shadow: 0 0 0 0 #adc6ff44;
+    animation: polling-symbol 1s infinite;
+}
+@keyframes polling-symbol {
+    100% {box-shadow: 0 0 0 30px #0000}
 }

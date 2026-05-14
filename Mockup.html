@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Temporal Simulator Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#571bc1",
+                        "surface-variant": "#2d3449",
+                        "tertiary": "#4edea3",
+                        "on-tertiary-fixed": "#002113",
+                        "surface-dim": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-primary-container": "#00285d",
+                        "surface-tint": "#adc6ff",
+                        "inverse-primary": "#005ac2",
+                        "on-tertiary": "#003824",
+                        "background": "#0b1326",
+                        "outline-variant": "#424754",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "primary-container": "#4d8eff",
+                        "on-background": "#dae2fd",
+                        "secondary": "#d0bcff",
+                        "on-error-container": "#ffdad6",
+                        "surface-bright": "#31394d",
+                        "on-secondary-fixed-variant": "#5516be",
+                        "primary": "#adc6ff",
+                        "surface": "#0b1326",
+                        "surface-container-low": "#131b2e",
+                        "surface-container-lowest": "#060e20",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-container": "#c4abff",
+                        "secondary-fixed-dim": "#d0bcff",
+                        "tertiary-container": "#00a572",
+                        "surface-container-highest": "#2d3449",
+                        "error-container": "#93000a",
+                        "on-secondary": "#3c0091",
+                        "on-surface-variant": "#c2c6d6",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#23005c",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "on-primary-fixed": "#001a42",
+                        "outline": "#8c909f",
+                        "inverse-on-surface": "#283044",
+                        "primary-fixed": "#d8e2ff",
+                        "secondary-fixed": "#e9ddff",
+                        "surface-container": "#171f33",
+                        "on-tertiary-container": "#00311f",
+                        "tertiary-fixed": "#6ffbbe",
+                        "on-error": "#690005",
+                        "on-primary": "#002e6a",
+                        "inverse-surface": "#dae2fd",
+                        "on-primary-fixed-variant": "#004395"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "panel-gap": "1px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "code-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "label-caps": ["11px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "code-sm": ["11px", { "lineHeight": "16px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0b1326; color: #dae2fd; }
+    </style>
+<style data-stitch-cursor="">*{cursor:crosshair!important}[contenteditable="true"]:focus,.cursor-text:focus{cursor:text!important}</style><style data-stitch-scroll-lock="">html,body{overflow:hidden!important}</style><style data-stitch-cursor=""></style><style data-stitch-scroll-lock=""></style><style data-stitch-cursor=""></style><style data-stitch-scroll-lock=""></style><style data-stitch-cursor=""></style><style data-stitch-scroll-lock=""></style></head>
+<body class="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface-container-low dark:bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop h-16 shrink-0 z-20">
+<div class="flex items-center gap-gutter">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">Temporal Sim v1.0</span>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<!-- Main Content Area -->
+<main class="flex-1 flex gap-panel-gap bg-outline-variant p-panel-gap overflow-hidden">
+<!-- Left Column: Workflow Editor -->
+<section class="flex flex-col bg-surface w-1/4 min-w-[300px] h-full overflow-y-auto">
+<div class="bg-surface-container-low border-b border-outline-variant p-3 sticky top-0 z-10">
+<h2 class="font-headline-md text-headline-md text-on-surface">Workflow Definition</h2>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<!-- Task Item 1 -->
+<div class="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3 ring-2 ring-primary bg-primary/5">
+<div class="flex justify-between items-center"><div class="flex items-center"><span class="flex h-2 w-2 relative mr-2"><span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span><span class="bg-primary-container text-on-primary-container font-code-sm text-code-sm px-2 py-0.5 rounded-sm uppercase tracking-wider text-[10px]">Active</span></div><span class="material-symbols-outlined text-on-surface-variant text-[16px] cursor-pointer hover:text-error">delete</span></div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant mb-1 block">Step Name</label>
+<input class="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value="ValidateInput"/>
+</div>
+</div>
+<!-- Task Item 2 -->
+<div class="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3"><div class="flex justify-between items-center"><span class="bg-tertiary-container text-on-tertiary-container font-code-sm text-code-sm px-2 py-0.5 rounded-sm">Timer</span><span class="material-symbols-outlined text-on-surface-variant text-[16px] cursor-pointer hover:text-error">delete</span></div><div><label class="font-label-caps text-label-caps text-on-surface-variant mb-1 block">Step Name</label><input class="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value="WaitForApproval"/></div></div><div class="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="bg-secondary-container text-on-secondary-container font-code-sm text-code-sm px-2 py-0.5 rounded-sm">Activity</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] cursor-pointer hover:text-error">delete</span>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant mb-1 block">Step Name</label>
+<input class="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value="ProcessPayment"/>
+</div>
+</div>
+<button class="border border-dashed border-outline-variant text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-label-caps text-label-caps py-3 rounded-DEFAULT transition-colors duration-200 flex items-center justify-center gap-2 mt-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                        Add Step
+                    </button>
+<div class="mt-8 pt-4 border-t border-outline-variant">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4">Temporal Client</h2>
+<button class="w-full bg-primary text-on-primary font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors duration-200">
+<span class="material-symbols-outlined">play_circle</span>
+        Run Workflow
+    </button>
+</div></div>
+</section>
+<!-- Center Column: Temporal Server -->
+<section class="flex flex-col flex-1 bg-surface h-full min-w-[400px]"><div class="bg-surface-container-low border-b border-outline-variant p-3 sticky top-0 z-20"><h1 class="font-headline-md text-headline-md font-bold text-on-surface">Temporal Server</h1></div>
+<!-- Task Queue (Top Half) -->
+<div class="flex-1 flex flex-col border-b border-outline-variant overflow-hidden">
+<div class="bg-surface-container-low border-b border-outline-variant p-3 flex justify-between items-center sticky top-0 z-10">
+<h2 class="font-headline-md text-headline-md text-on-surface">Task Queue</h2>
+</div>
+<div class="p-4 overflow-y-auto flex-1 flex flex-col gap-2">
+<!-- Queue Item 1 -->
+<div class="bg-surface-container-low flex items-center p-3 border border-outline-variant rounded-DEFAULT gap-4">
+<div class="w-8 h-8 rounded-DEFAULT bg-tertiary-container/20 flex items-center justify-center border border-tertiary/30 shrink-0">
+<span class="material-symbols-outlined text-tertiary" style='font-variation-settings: "FILL" 1;'>check_circle</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">ValidateInput</span>
+<span class="bg-primary-container text-on-primary-container font-code-sm text-code-sm px-1.5 py-[2px] rounded-sm text-[10px]">Logic</span>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant truncate">TaskID: t-8f92a1 | Completed in 12ms</div>
+</div>
+</div>
+<!-- Queue Item 2 -->
+<div class="bg-surface-container-low flex items-center p-3 border border-outline-variant rounded-DEFAULT gap-4">
+<div class="w-8 h-8 rounded-DEFAULT bg-secondary-container/20 flex items-center justify-center border border-secondary/30 shrink-0">
+<span class="material-symbols-outlined text-secondary" style='font-variation-settings: "FILL" 1;'>play_arrow</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">ProcessPayment</span>
+<span class="bg-secondary-container text-on-secondary-container font-code-sm text-code-sm px-1.5 py-[2px] rounded-sm text-[10px]">Activity</span>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant truncate">TaskID: t-3b4c9e | Running on Worker-2</div>
+</div>
+</div><div class="bg-surface-container-low flex items-center p-3 border border-outline-variant rounded-DEFAULT gap-4 opacity-70"><div class="w-8 h-8 rounded-DEFAULT bg-tertiary-container/20 flex items-center justify-center border border-tertiary/30 shrink-0"><span class="material-symbols-outlined text-tertiary">schedule</span></div><div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1"><span class="font-body-md text-body-md font-semibold text-on-surface truncate">WaitForApproval</span><span class="bg-tertiary-container text-on-tertiary-container font-code-sm text-code-sm px-1.5 py-[2px] rounded-sm text-[10px]">Timer</span></div><div class="font-code-sm text-code-sm text-on-surface-variant truncate">TaskID: t-wait | Waiting for Trigger</div></div></div>
+<!-- Queue Item 3 -->
+<div class="bg-surface-container-low flex items-center p-3 border border-outline-variant rounded-DEFAULT gap-4 opacity-70">
+<div class="w-8 h-8 rounded-DEFAULT bg-surface-variant flex items-center justify-center border border-outline-variant shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant">schedule</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">SendConfirmation</span>
+<span class="bg-secondary-container text-on-secondary-container font-code-sm text-code-sm px-1.5 py-[2px] rounded-sm text-[10px]">Activity</span>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant truncate">TaskID: t-pending | Scheduled</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Event History (Bottom Half) -->
+<div class="flex-1 flex flex-col bg-surface-dim overflow-hidden">
+<div class="bg-surface-container-low border-b border-outline-variant p-2 px-3 flex justify-between items-center sticky top-0 z-10">
+<h2 class="font-label-caps text-label-caps text-on-surface">Workflow Event History</h2>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">filter_list</span></button>
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">download</span></button>
+</div>
+</div>
+<div class="p-3 overflow-y-auto text-code-md flex-1"><table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-label-caps text-on-surface-variant border-b border-outline-variant">
+<th class="py-2 px-3 font-bold">Timestamp</th>
+<th class="py-2 px-3 font-bold">Event Type</th>
+<th class="py-2 px-3 font-bold">Details</th>
+</tr>
+</thead>
+<tbody class="font-code-sm text-on-surface">
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:32:620</td>
+<td class="py-2 px-3 flex items-center gap-2 text-primary">Workflow Execution Completed</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Result</span> <code class="text-on-surface-variant">{"OrderNumber":"Z1238","Status":"SUCCESS"...}</code></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:32:620</td>
+<td class="py-2 px-3 flex items-center gap-2 text-primary">Workflow Task Completed</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Identity</span> <font color="#c2c6d6" face="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace">worker-node-2</font></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:32:620</td>
+<td class="py-2 px-3 flex items-center gap-2 text-primary">Workflow Task Started</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">History Size Bytes</span> <code class="text-on-surface-variant">2929</code></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:32:620</td>
+<td class="py-2 px-3 flex items-center gap-2 text-primary">Workflow Task Scheduled</td>
+<td class="py-2 px-3"><br/></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:32:620</td>
+<td class="py-2 px-3 flex items-center gap-2 text-[goldenrod]">Timer Fired</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Timer ID</span> <code class="text-on-surface-variant">11</code></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:29:610</td>
+<td class="py-2 px-3 flex items-center gap-2 text-[goldenrod]">Timer Started</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Start To Fire Timeout</span> <code class="text-secondary bg-secondary-container px-1 rounded">3 seconds</code> Summary <span class="bg-secondary-container text-on-secondary-container px-1 rounded">Sleep</span></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:29:610</td>
+<td class="py-2 px-3 flex items-center gap-2 text-secondary">Activity Task Completed</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Result</span> <code class="text-on-surface-variant">{"OrderNumber":"Z1238","Status":"SUCCESS"...}</code></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors bg-secondary/5">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:29:610</td>
+<td class="py-2 px-3 flex items-center gap-2 text-secondary">Activity Task Scheduled</td>
+<td class="py-2 px-3"><span class="bg-surface-variant px-1 rounded">Activity Type</span> <span class="bg-surface-container-highest px-1 border border-outline-variant rounded">ProcessPayment</span></td>
+</tr>
+<tr class="border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors bg-primary/10">
+<td class="py-2 px-3 text-on-surface-variant">2026-05-13 19:53:29:600</td>
+<td class="py-2 px-3 flex items-center gap-2 text-primary">Workflow Execution Started</td>
+<td class="py-2 px-3"> </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</section>
+<!-- Right Column: Workers -->
+<section class="flex flex-col bg-surface w-1/4 min-w-[280px] h-full overflow-y-auto">
+<div class="bg-surface-container-low border-b border-outline-variant p-3 sticky top-0 z-10 flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Worker Nodes</h2>
+<span class="bg-tertiary/10 text-tertiary border border-tertiary/30 font-label-caps text-label-caps px-2 py-0.5 rounded-full flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>2 Active</span>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<!-- Worker 1 -->
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-3">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">dns</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">worker-node-1</span>
+</div>
+<span class="text-on-surface-variant font-code-sm text-code-sm">v1.22.0</span>
+</div>
+<div class="bg-surface-dim rounded-sm p-2 border border-outline-variant/50 flex gap-2 flex-col">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">sync</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">Polling for tasks...</span>
+<div class="flex gap-2 mt-2 w-full">
+<button class="flex-1 py-1 px-2 border border-outline-variant/30 text-[10px] font-label-caps text-on-surface-variant/30 uppercase cursor-not-allowed" disabled="">
+    Fail Task
+  </button>
+<button class="flex-1 py-1 px-2 border border-outline-variant/30 text-[10px] font-label-caps text-on-surface-variant/30 uppercase cursor-not-allowed" disabled="">
+    Timeout
+  </button>
+</div></div>
+</div>
+<!-- Worker 2 -->
+<div class="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">engineering</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface">worker-node-2</span>
+</div>
+<span class="text-on-surface-variant font-code-sm text-code-sm">v1.22.0</span>
+</div>
+<div class="bg-secondary-container/10 border border-secondary/30 rounded-sm p-2 flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[16px]">build</span>
+<span class="font-code-sm text-code-sm text-on-surface font-bold">Running: ProcessPayment</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-1.5 rounded-full w-[65%]"></div>
+</div>
+<div class="flex gap-2 mt-2">
+<button class="flex-1 py-1 px-2 border border-outline-variant text-[10px] font-label-caps text-on-surface-variant hover:bg-error-container/20 hover:text-error hover:border-error/50 transition-colors uppercase">
+    Fail Task
+  </button>
+<button class="flex-1 py-1 px-2 border border-outline-variant text-[10px] font-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface transition-colors uppercase">
+    Timeout
+  </button>
+</div></div>
+</div>
+<button class="border border-outline-variant bg-surface-container text-on-surface font-label-caps text-label-caps py-2 rounded-DEFAULT hover:bg-surface-container-highest transition-colors duration-200 mt-2">
+                        Add Worker
+                    </button>
+</div>
+</section>
+</main>
+</div>
+</body></html>
