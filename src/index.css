@@ -164,7 +164,7 @@ body {
   inset: 0 100% 0 0;
   border-radius: inherit;
   background: currentColor;
-  animation: progress-bar 2s infinite;
+  animation: progress-bar 5s infinite;
 }
 @keyframes progress-bar {
     100% {inset:0}

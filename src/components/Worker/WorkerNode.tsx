@@ -7,14 +7,18 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
   const { taskQueue } = state;
 
   useEffect(() => {
-    if (worker.status === 'Idle' && taskQueue.length > 0) {
-      const task = taskQueue[0];
-      dispatch({ type: 'START_TASK', taskId: task.id, workerId: worker.id, timestamp: new Date().toLocaleTimeString() });
+    const nextTask = taskQueue[0];
+    if (worker.status === 'Idle' && nextTask) {
+      const timer = setTimeout(() => {
+        dispatch({ type: 'START_TASK', taskId: nextTask.id, workerId: worker.id, timestamp: new Date().toLocaleTimeString() });
+      }, 5000); // Wait in queue for 5 seconds
+      return () => clearTimeout(timer);
     }
-  }, [worker.status, taskQueue, worker.id, dispatch]);
+  }, [worker.status, taskQueue[0]?.id, worker.id, dispatch]);
 
   useEffect(() => {
-    if (worker.status === 'Working' && worker.currentTask) {
+    const currentTask = worker.currentTask;
+    if (worker.status === 'Working' && currentTask) {
       const timer = setTimeout(() => {
         const randNum = Math.random() * 101;
         const resultValue = JSON.stringify({
@@ -22,14 +26,14 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
         });
         dispatch({ 
           type: 'COMPLETE_TASK', 
-          taskId: worker.currentTask!.id, 
+          taskId: currentTask.id, 
           timestamp: new Date().toLocaleTimeString(),
           resultValue
         });
-      }, 2000); // Simulate processing time
+      }, 5000); // Simulate processing time for 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [worker.status, worker.currentTask, dispatch]);
+  }, [worker.status, worker.currentTask?.id, dispatch]);
 
   return (
     <div className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-1">
