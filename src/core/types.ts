@@ -13,12 +13,14 @@ export interface EventLog {
   timestamp: string; // yyyy-MM-dd hh:mm:ss:sss
   eventType: string; // e.g., 'WorkflowExecutionStarted', 'ActivityTaskScheduled'
   details: string;
+  value?: string;
   stepId?: string;
 }
 
 export interface TemporalTask {
   id: string;
   stepId: string;
+  name: string;
   type: TaskType;
   state: TaskState;
   retryCount: number;

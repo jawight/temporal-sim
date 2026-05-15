@@ -24,7 +24,7 @@ export const EventHistory: React.FC = () => {
               <tr key={event.id} className={`border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors ${activeStepId === event.stepId ? 'bg-primary/10' : ''}`}>
                 <td className="py-2 px-3 text-on-surface-variant opacity-50">{event.timestamp}</td>
                 <td className="py-2 px-3 flex items-center gap-2 text-primary">{event.eventType}</td>
-                <td className="py-2 px-3">{event.details}</td>
+                <td className="py-2 px-3">{event.details}&nbsp;<span className="bg-primary text-on-primary font-code-sm text-code-sm px-1 py-0.5 rounded-sm tracking-wider text-[12px]">{event.value}</span></td>
               </tr>
             ))}
           </tbody>

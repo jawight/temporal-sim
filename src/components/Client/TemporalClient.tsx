@@ -1,12 +1,13 @@
 import React, { useContext } from 'react';
 import { SimulationContext } from '../../core/SimulationContext';
+import TaskTypeBadge from '../TaskTypeBadge';
 
 export const TemporalClient: React.FC = () => {
   const { state, dispatch } = useContext(SimulationContext)!;
   const { workflowSteps } = state;
 
   return (
-    <section className="flex flex-col bg-surface w-1/4 min-w-[300px] h-full overflow-y-auto">
+    <section className="flex flex-col bg-surface w-1/4 min-w-75 h-full overflow-y-auto">
       <div className="bg-surface-container-low border-b border-outline-variant p-3 sticky top-0 z-10">
         <h2 className="font-headline-md text-headline-md text-on-surface">Workflow Definition</h2>
       </div>
@@ -14,9 +15,14 @@ export const TemporalClient: React.FC = () => {
         {workflowSteps.map(step => (
           <div key={step.id} className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3">
             <div className="flex justify-between items-center">
-              <span className="bg-primary-container text-on-primary-container font-code-sm text-code-sm px-2 py-0.5 rounded-sm uppercase tracking-wider text-[10px]">{step.type}</span>
+              <TaskTypeBadge taskType={step.type} />
             </div>
-            <input className="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value={step.name} readOnly />
+            <input 
+              className="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" 
+              type="text" 
+              value={step.name} 
+              onChange={(e) => dispatch({ type: 'UPDATE_STEP_NAME', stepId: step.id, name: e.target.value })}
+            />
           </div>
         ))}
         <div className="mt-8 pt-4 border-t border-outline-variant">
