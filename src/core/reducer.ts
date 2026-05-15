@@ -7,15 +7,16 @@ export interface SimulationState {
   eventHistory: EventLog[];
   workers: WorkerNodeState[];
   activeStepId: string | null;
+  nextId: number;
 }
 
 export type SimulationAction =
-  | { type: 'ADD_WORKER' }
-  | { type: 'RUN_WORKFLOW' }
-  | { type: 'SCHEDULE_TASK', task: TemporalTask }
-  | { type: 'START_TASK', taskId: string, workerId: string }
-  | { type: 'COMPLETE_TASK', taskId: string }
-  | { type: 'FAIL_TASK', taskId: string }
+  | { type: 'ADD_WORKER', timestamp: string }
+  | { type: 'RUN_WORKFLOW', timestamp: string }
+  | { type: 'SCHEDULE_TASK', task: TemporalTask, timestamp: string }
+  | { type: 'START_TASK', taskId: string, workerId: string, timestamp: string }
+  | { type: 'COMPLETE_TASK', taskId: string, timestamp: string, resultValue?: string }
+  | { type: 'FAIL_TASK', taskId: string, timestamp: string }
   | { type: 'UPDATE_STEP_NAME', stepId: string, name: string };
 
 export const initialState: SimulationState = {
@@ -27,14 +28,15 @@ export const initialState: SimulationState = {
   tasks: [],
   taskQueue: [],
   eventHistory: [],
-  workers: [{ id: Date.now().toString(), status: 'Idle', currentTask: null }],
+  workers: [{ id: 'worker-1', status: 'Idle', currentTask: null }],
   activeStepId: null,
+  nextId: 2,
 };
 
-function newEventLog(eventType: string, details: string, value: string, stepId?: string): EventLog{
+function newEventLog(id: string, timestamp: string, eventType: string, details: string, value: string, stepId?: string): EventLog{
   return { 
-    id: Date.now().toString(), 
-    timestamp: new Date().toLocaleTimeString(), 
+    id, 
+    timestamp, 
     eventType, 
     details,
     value,
@@ -43,33 +45,61 @@ function newEventLog(eventType: string, details: string, value: string, stepId?:
 }
 
 export function simulationReducer(state: SimulationState, action: SimulationAction): SimulationState {
+  let nextId = state.nextId;
+
   switch (action.type) {
     case 'ADD_WORKER':
       return {
         ...state,
-        workers: [...state.workers, { id: Date.now().toString(), status: 'Idle', currentTask: null }],
+        workers: [...state.workers, { id: `worker-${nextId}`, status: 'Idle', currentTask: null }],
+        nextId: nextId + 1
       };
     case 'RUN_WORKFLOW':{
       const step = state.workflowSteps[0];
-      const temp = {
-        ...state,
-        tasks: [],
-        taskQueue: [],
-        eventHistory: [newEventLog("Workflow Execution Started", "Workflow Type Name", "TemporalSimWorkflow")],
-        activeStepId: step.id
-      };
+      const workflowStartedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Started", "Workflow Type Name", "TemporalSimWorkflow");
+      
       const newTask: TemporalTask = {
-        id: Date.now().toString() + step.id,
+        id: `task-${nextId++}`,
         stepId: step.id,
         type: step.type,
         name: step.name,
         state: 'Scheduled',
         retryCount: 0
       };
-      return simulationReducer(temp, {type: 'SCHEDULE_TASK', task: newTask})
+
+      let eventType;
+      let details;
+      let value;
+      switch (newTask.type) {
+        case 'Activity': 
+          eventType = 'Activity Task Scheduled'; 
+          details = 'Attempt';
+          value = (newTask.retryCount + 1).toString();
+          break;
+        case 'Logic': 
+          eventType = 'Workflow Task Scheduled'; 
+          details = 'Task Queue Name';
+          value = "TheOnlyOne";
+          break;
+        case 'Timer': 
+          eventType = 'Timer Started';
+          details = 'Start time';
+          value = action.timestamp;
+          break;
+      }
+
+      const taskScheduledLog = newEventLog((nextId++).toString(), action.timestamp, eventType || 'Task Scheduled', details || '', value || '', newTask.stepId);
+
+      return {
+        ...state,
+        tasks: [newTask],
+        taskQueue: [newTask],
+        eventHistory: [taskScheduledLog, workflowStartedLog],
+        activeStepId: step.id,
+        nextId: nextId
+      };
     }
     case 'SCHEDULE_TASK':{
-      if (!action.task) return state;
       const task: TemporalTask = {
         ...action.task,
         state: 'Scheduled',
@@ -91,15 +121,15 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         case 'Timer': 
           eventType = 'Timer Started';
           details = 'Start time';
-          value = new Date().toLocaleTimeString();
-          // IF THE TASK IS A TIMER, IT SHOULD NOT BE ADDED TO THE TASK QUEUE.
+          value = action.timestamp;
           break;
       }
       return {
         ...state,
         tasks: [...state.tasks, task],
         taskQueue: [...state.taskQueue, task],
-        eventHistory: [newEventLog(eventType, details, value, task.stepId), ...state.eventHistory],
+        eventHistory: [newEventLog((nextId++).toString(), action.timestamp, eventType || 'Task Scheduled', details || '', value || '', task.stepId), ...state.eventHistory],
+        nextId: nextId
       };
     }
     case 'START_TASK':{
@@ -122,8 +152,6 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           value = byteCount.toString();
           break;
         case 'Timer': 
-          console.error("Found a timer in the task queue.", task.name)
-          // IF THE TASK IS A TIMER, IT SHOULD NOT BE ADDED TO THE TASK QUEUE.return 
           return {
             ...state,
             taskQueue: state.taskQueue.filter(t => t.id !== action.taskId)
@@ -133,23 +161,22 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         ...state,
         taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
         workers: state.workers.map(w => w.id === action.workerId ? { ...w, status: 'Working', currentTask: task } : w),
-        eventHistory: [newEventLog(eventType, details, value, task.stepId), ...state.eventHistory],
+        eventHistory: [newEventLog((nextId++).toString(), action.timestamp, eventType || 'Task Started', details || '', value || '', task.stepId), ...state.eventHistory],
         activeStepId: task.stepId,
+        nextId: nextId
       };
     }
-    case 'COMPLETE_TASK':
+    case 'COMPLETE_TASK': {
       const completedTask = state.tasks.find(t => t.id === action.taskId);
+      if (!completedTask) return state;
       let eventType;
       let details;
       let value;
-      switch (completedTask?.type) {
+      switch (completedTask.type) {
         case 'Activity': 
           eventType = 'Activity Task Completed'; 
           details = 'Result';
-          const randNum = Math.random()*101;
-          value = JSON.stringify({
-            data: `The answer is ${Math.floor(randNum)}`
-          });
+          value = action.resultValue || JSON.stringify({ data: 'No data' });
           break;
         case 'Logic': 
           eventType = 'Workflow Task Completed';
@@ -160,27 +187,96 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         case 'Timer':
           eventType = 'Timer Fired';
           details = 'Completed time';
-          value = new Date().toLocaleTimeString();
+          value = action.timestamp;
           break;
         default:
-          console.error("Couldn't find the completed task in the tasks list.")
           return state;
       }
-      return {
-        ...state,
-        workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
-        eventHistory: [newEventLog(eventType, details, value, completedTask.stepId), ...state.eventHistory],
-        activeStepId: completedTask?.stepId || null,
-      };
+
+      const completedLog = newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, completedTask.stepId);
+      
+      const currentIndex = state.workflowSteps.findIndex(s => s.id === completedTask.stepId);
+      const nextStep = state.workflowSteps[currentIndex + 1];
+
+      if (nextStep) {
+        const newTask: TemporalTask = {
+          id: `task-${nextId++}`,
+          stepId: nextStep.id,
+          type: nextStep.type,
+          name: nextStep.name,
+          state: 'Scheduled',
+          retryCount: 0
+        };
+
+        let nextEventType;
+        let nextDetails;
+        let nextValue;
+        switch (newTask.type) {
+          case 'Activity': 
+            nextEventType = 'Activity Task Scheduled'; 
+            nextDetails = 'Attempt';
+            nextValue = (newTask.retryCount + 1).toString();
+            break;
+          case 'Logic': 
+            nextEventType = 'Workflow Task Scheduled'; 
+            nextDetails = 'Task Queue Name';
+            nextValue = "TheOnlyOne";
+            break;
+          case 'Timer': 
+            nextEventType = 'Timer Started';
+            nextDetails = 'Start time';
+            nextValue = action.timestamp;
+            break;
+        }
+
+        const taskScheduledLog = newEventLog((nextId++).toString(), action.timestamp, nextEventType || 'Task Scheduled', nextDetails || '', nextValue || '', newTask.stepId);
+
+        return {
+          ...state,
+          tasks: [...state.tasks, newTask],
+          taskQueue: [...state.taskQueue, newTask],
+          workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+          eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
+          activeStepId: nextStep.id,
+          nextId: nextId
+        };
+      } else {
+        const workflowCompletedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Completed", "Result", '{"message": "It is done."}');
+
+        return {
+          ...state,
+          workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+          eventHistory: [workflowCompletedLog, completedLog, ...state.eventHistory],
+          activeStepId: null,
+          nextId: nextId
+        };
+      }
+    }
     case 'FAIL_TASK':{
       const failedTask = state.tasks.find(t => t.id === action.taskId);
       if (!failedTask) return state;
-      const temp: SimulationState = {
-        ...state,
-        workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
-        activeStepId: failedTask?.stepId || null,
+      
+      const updatedWorkers = state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w);
+      
+      const newTask: TemporalTask = {
+        ...failedTask,
+        state: 'Scheduled',
+        retryCount: failedTask.retryCount + 1
       };
-      return simulationReducer(temp, {type: 'SCHEDULE_TASK', task: {...failedTask, retryCount: failedTask.retryCount + 1, state: 'Scheduled' }});
+
+      let eventType = 'Activity Task Scheduled'; 
+      let details = 'Attempt';
+      let value = (newTask.retryCount + 1).toString();
+
+      return {
+        ...state,
+        workers: updatedWorkers,
+        tasks: [...state.tasks, newTask],
+        taskQueue: [...state.taskQueue, newTask],
+        eventHistory: [newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, failedTask.stepId), ...state.eventHistory],
+        activeStepId: failedTask.stepId,
+        nextId: nextId
+      };
     }
     case 'UPDATE_STEP_NAME':
       return {

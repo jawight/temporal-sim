@@ -9,7 +9,7 @@ const App: React.FC = () => {
   const { workers, taskQueue } = state;
 
   const addWorker = () => {
-    dispatch({ type: 'ADD_WORKER' });
+    dispatch({ type: 'ADD_WORKER', timestamp: new Date().toLocaleTimeString() });
   };
 
   return (
