@@ -16,10 +16,7 @@ export const TemporalClient: React.FC = () => {
             <div className="flex justify-between items-center">
               <span className="bg-primary-container text-on-primary-container font-code-sm text-code-sm px-2 py-0.5 rounded-sm uppercase tracking-wider text-[10px]">{step.type}</span>
             </div>
-            <div>
-              <label className="font-label-caps text-label-caps text-on-surface-variant mb-1 block">Step Name</label>
-              <input className="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value={step.name} readOnly />
-            </div>
+            <input className="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" type="text" value={step.name} readOnly />
           </div>
         ))}
         <div className="mt-8 pt-4 border-t border-outline-variant">

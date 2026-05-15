@@ -28,7 +28,6 @@ export interface WorkerNodeState {
   id: string;
   status: 'Idle' | 'Working' | 'Error';
   currentTask: TemporalTask | null;
-  color: string;
 }
 
 export function nextPastel(seed: number) { 

@@ -1,6 +1,112 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-secondary-container: #571bc1;
+  --color-surface-variant: #2d3449;
+  --color-tertiary: #4edea3;
+  --color-on-tertiary-fixed: #002113;
+  --color-surface-dim: #0b1326;
+  --color-surface-container-high: #222a3d;
+  --color-primary-fixed-dim: #adc6ff;
+  --color-on-primary-container: #00285d;
+  --color-surface-tint: #adc6ff;
+  --color-inverse-primary: #005ac2;
+  --color-on-tertiary: #003824;
+  --color-background: #0b1326;
+  --color-outline-variant: #424754;
+  --color-on-tertiary-fixed-variant: #005236;
+  --color-primary-container: #4d8eff;
+  --color-on-background: #dae2fd;
+  --color-secondary: #d0bcff;
+  --color-on-error-container: #ffdad6;
+  --color-surface-bright: #31394d;
+  --color-on-secondary-fixed-variant: #5516be;
+  --color-primary: #adc6ff;
+  --color-surface: #0b1326;
+  --color-surface-container-low: #131b2e;
+  --color-surface-container-lowest: #060e20;
+  --color-on-surface: #dae2fd;
+  --color-on-secondary-container: #c4abff;
+  --color-secondary-fixed-dim: #d0bcff;
+  --color-tertiary-container: #00a572;
+  --color-surface-container-highest: #2d3449;
+  --color-error-container: #93000a;
+  --color-on-secondary: #3c0091;
+  --color-on-surface-variant: #c2c6d6;
+  --color-error: #ffb4ab;
+  --color-on-secondary-fixed: #23005c;
+  --color-tertiary-fixed-dim: #4edea3;
+  --color-on-primary-fixed: #001a42;
+  --color-outline: #8c909f;
+  --color-inverse-on-surface: #283044;
+  --color-primary-fixed: #d8e2ff;
+  --color-secondary-fixed: #e9ddff;
+  --color-surface-container: #171f33;
+  --color-on-tertiary-container: #00311f;
+  --color-tertiary-fixed: #6ffbbe;
+  --color-on-error: #690005;
+  --color-on-primary: #002e6a;
+  --color-inverse-surface: #dae2fd;
+  --color-on-primary-fixed-variant: #004395;
+
+  /* Border Radius */
+  --radius-sm: 0.125rem;
+  --radius: 0.125rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+  --radius-full: 0.75rem;
+
+  /* Spacing */
+  --spacing-unit: 4px;
+  --spacing-panel-gap: 1px;
+  --spacing-margin-mobile: 16px;
+  --spacing-margin-desktop: 24px;
+  --spacing-gutter: 16px;
+
+  /* Font Family */
+  --font-body-sm: "Inter";
+  --font-label-caps: "Inter";
+  --font-headline-lg: "Inter";
+  --font-body-md: "Inter";
+  --font-headline-md: "Inter";
+  --font-code-md: "JetBrains Mono";
+  --font-code-sm: "JetBrains Mono";
+
+  /* Font Size & Typography */
+  --text-body-sm: 12px;
+  --text-body-sm--line-height: 16px;
+  --text-body-sm--font-weight: 400;
+
+  --text-label-caps: 11px;
+  --text-label-caps--line-height: 16px;
+  --text-label-caps--letter-spacing: 0.05em;
+  --text-label-caps--font-weight: 700;
+
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--letter-spacing: -0.02em;
+  --text-headline-lg--font-weight: 600;
+
+  --text-body-md: 14px;
+  --text-body-md--line-height: 20px;
+  --text-body-md--font-weight: 400;
+
+  --text-headline-md: 20px;
+  --text-headline-md--line-height: 28px;
+  --text-headline-md--letter-spacing: -0.01em;
+  --text-headline-md--font-weight: 600;
+
+  --text-code-md: 13px;
+  --text-code-md--line-height: 20px;
+  --text-code-md--font-weight: 400;
+
+  --text-code-sm: 11px;
+  --text-code-sm--line-height: 16px;
+  --text-code-sm--font-weight: 400;
+}
+
+@variant dark (&:where(.dark, .dark *));
 
 body {
     margin: 0;
@@ -22,9 +128,9 @@ body {
     }
 }
 
-/* HTML: <div class="loader"></div> */
+/* HTML: <div class="polling-symbol"></div> */
 .polling-symbol {
-    width: 20px;
+    width: 15px;
     aspect-ratio: 1;
     border-radius: 50%;
     background: #adc6ff;
@@ -32,5 +138,26 @@ body {
     animation: polling-symbol 1s infinite;
 }
 @keyframes polling-symbol {
-    100% {box-shadow: 0 0 0 30px #0000}
+    100% {box-shadow: 0 0 0 10px #0000}
+}
+
+/* HTML: <div class="loader"></div> */
+.progress-bar {
+  height: 22px;
+  border-radius: 20px;
+  border: 2px solid;
+  position: relative;
+  background-size: 60% 100%;
+}
+.progress-bar::before {
+  content: "";
+  position: absolute;
+  margin: 2px;
+  inset: 0 100% 0 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: progress-bar 2s infinite;
+}
+@keyframes progress-bar {
+    100% {inset:0}
 }

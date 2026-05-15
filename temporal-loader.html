@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+	<head>
+        <meta charset="utf-8" />
+		<meta name="description" content="" />
+
+		<link rel="icon" href="/favicon.ico" sizes="any" id="any-favicon" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" id="favicon" />
+
+		<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+		<link rel="manifest" href="/site.webmanifest" />
+
+		<meta name="msapplication-TileColor" content="#2b5797" />
+		<meta name="theme-color" content="#ffffff" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Temporal</title>
+		<style>
+			:root {
+				--loading-bg: #f9fafb;
+				--loading-container-bg: #f8fafc;
+				--loading-nav-bg: #ffffff;
+				--loading-border-color: #aebed9;
+				--ellipse-shadow: rgb(0 0 0 / 15%);
+				--ellipse-drop-shadow: drop-shadow(0 4px 12px var(--ellipse-shadow));
+			}
+
+			:root.dark {
+				--loading-bg: #141414;
+				--loading-container-bg: #141414;
+				--loading-nav-bg: #000000;
+				--loading-border-color: #273860;
+				--ellipse-shadow: rgb(255 255 255 / 25%);
+			}
+
+			#app-loader {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100dvw;
+				height: 100dvh;
+				background: var(--loading-bg);
+				z-index: 9999;
+			}
+
+			#loading-shell {
+				display: flex;
+				height: 100dvh;
+			}
+
+			#loading-content-container {
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				background: var(--loading-container-bg);
+			}
+
+			#loading-content {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: center;
+			}
+
+			#loading-left-nav {
+				background: #4f46e5;
+				background: linear-gradient(to bottom, #4f46e5, #1e1b4b);
+				width: 66px;
+				align-items: center;
+				justify-content: start;
+				padding-top: 20px;
+				flex-direction: column;
+				border-right: 1px solid var(--loading-border-color);
+			}
+
+			#loading-top-nav {
+				height: 49px;
+				width: 100%;
+				padding: 0 20px;
+				background: var(--loading-nav-bg);
+				border-bottom: 1px solid var(--loading-border-color);
+			}
+
+			#loading-bottom-nav {
+				align-items: center;
+				background: #4f46e5;
+				background: linear-gradient(to bottom, #4f46e5, #1e1b4b);
+				height: 60px;
+				border-top: 1px solid var(--loading-border-color);
+				padding-left: 20px;
+			}
+
+			@media (max-width: 779px) {
+				#loading-left-nav {
+					display: none;
+				}
+
+				#loading-top-nav {
+					display: none;
+				}
+
+				#loading-bottom-nav {
+					display: flex;
+				}
+			}
+
+			@media (min-width: 780px) {
+				#loading-left-nav {
+					display: flex;
+				}
+
+				#loading-top-nav {
+					display: flex;
+				}
+
+				#loading-bottom-nav {
+					display: none;
+				}
+			}
+		</style>
+
+		
+	</head>
+
+	<body>
+		<script nonce="XhJUDi91T+JNQKa+v6LsQQ==">
+			async function purge() {
+				return await fetch('/purge');
+			}
+
+			// Save and restore loader animation progress
+			function saveLoaderProgress() {
+				const verticalEllipse = document.querySelector('.vertical-ellipse');
+				const horizontalEllipse = document.querySelector('.horizontal-ellipse');
+
+				if (verticalEllipse && horizontalEllipse) {
+					const animations = [
+						...verticalEllipse.getAnimations(),
+						...horizontalEllipse.getAnimations()
+					];
+
+					if (animations.length > 0) {
+						// Save current animation time and timestamp
+						const saveData = {
+							animationTime: animations[0].currentTime,
+							timestamp: Date.now()
+						};
+						sessionStorage.setItem('loaderProgress', JSON.stringify(saveData));
+					}
+				}
+			}
+			globalThis.saveLoaderProgress = saveLoaderProgress;
+
+			function restoreLoaderProgress() {
+				const savedData = sessionStorage.getItem('loaderProgress');
+				if (savedData) {
+					try {
+						const { animationTime, timestamp } = JSON.parse(savedData);
+						const now = Date.now();
+						const elapsedTime = now - timestamp;
+
+						// If more than 15 seconds have passed, start from beginning
+						if (elapsedTime > 15000) {
+							sessionStorage.removeItem('loaderProgress');
+							return;
+						}
+
+						// Calculate where animation should be now based on elapsed real time
+						const targetTime = animationTime + elapsedTime;
+
+						const verticalEllipse = document.querySelector('.vertical-ellipse');
+						if (verticalEllipse) {
+							const animations = verticalEllipse.getAnimations();
+							if (animations.length > 0) {
+								const duration = animations[0].effect.getTiming().duration; // 7000ms
+
+								// Define breakpoints as percentages of total animation (7s)
+								const breakpoints = [
+									{ percent: 0, description: 'animation start' }, // 0ms
+									{ percent: 7.5, description: 'drawing complete' }, // ~525ms
+									{ percent: 25, description: 'pre-transform hold' }, // ~1750ms
+									{ percent: 33.33, description: 'transform complete' }, // ~2333ms
+									{ percent: 58.33, description: 'transform hold end' }, // ~4083ms
+									{ percent: 66.67, description: 'return rotation complete' }, // ~4667ms
+									{ percent: 80, description: 'shape hold end' }, // ~5600ms
+									{ percent: 86.67, description: 'disappear complete' } // ~6067ms
+								];
+
+								// Convert target time to percentage
+								const targetPercent = (targetTime / duration) * 100;
+
+								// Find the next breakpoint (or loop back to first)
+								let nextBreakpoint = breakpoints.find(
+									(bp) => bp.percent > targetPercent % 100
+								);
+								if (!nextBreakpoint) {
+									nextBreakpoint = breakpoints[0]; // Loop back to beginning
+								}
+
+								// Set animation to the chosen breakpoint
+								const breakpointTime =
+									(nextBreakpoint.percent / 100) * duration;
+
+								document
+									.querySelectorAll('.vertical-ellipse, .horizontal-ellipse')
+									.forEach((el) => {
+										el.getAnimations().forEach((anim) => {
+											anim.currentTime = breakpointTime;
+										});
+									});
+							}
+						}
+					} catch (e) {
+						// If parsing fails, remove the invalid data
+						sessionStorage.removeItem('loaderProgress');
+					}
+				}
+			}
+
+			// Save progress when page unloads
+			window.addEventListener('beforeunload', saveLoaderProgress);
+
+			// Restore progress when animations start
+			window.addEventListener('DOMContentLoaded', () => {
+				requestAnimationFrame(restoreLoaderProgress);
+			});
+			const localStoragePref = localStorage.getItem('dark mode');
+			const darkModeOn = localStoragePref === 'true';
+			const lightModeOff = localStoragePref !== 'false';
+
+			const darkPreference = window?.matchMedia?.(
+				'(prefers-color-scheme: dark)'
+			)?.matches;
+
+			if (
+				darkModeOn ||
+				(darkPreference &&
+					(localStoragePref === null || localStoragePref === '"system"'))
+			) {
+				document.documentElement.classList.add('dark');
+			}
+
+			function shouldRefresh(refresh, url) {
+				const { date: lastRefresh, url: lastUrl } = refresh;
+
+				if (lastUrl === null) {
+					return true;
+				}
+
+				if (url !== lastUrl) {
+					return false;
+				}
+
+				const now = new Date().getTime();
+				const delay = 1 * 1 * 1000;
+
+				if (lastRefresh + delay > now) {
+					return false;
+				}
+
+				return true;
+			}
+
+			function setAutoRefresh(url) {
+				window.localStorage.setItem(
+					'shouldRefresh',
+					JSON.stringify({ url, date: new Date().getTime() })
+				);
+			}
+
+			function errorCheck(error) {
+				const message = error?.reason?.message || '';
+
+				if (
+					message.startsWith('Failed to fetch dynamically imported module:')
+				) {
+					const lastRefresh = JSON.parse(
+						window.localStorage.getItem('shouldRefresh') || '{}'
+					);
+
+					const refresh = shouldRefresh(lastRefresh, 'purge');
+					setAutoRefresh('purge');
+
+					// Check if this works for safari, then swap it out with the purge or combine it? ¯\_(ツ)_/¯
+					// const response = await fetch(window.location.href, { cache: 'reload' });
+
+					// Let's just try forcing the browser cache out either way, more requests to the CDN but it should be fine
+					purge()
+						.then((response) => {
+							// Check if we've tried the hard refresh using the purge header if we have recently skip reloading
+							if (refresh && response.status === 200) {
+								console.log('reloading');
+								// Call reload(true) in FF this will force a purge of the cache in other browsers it won't
+								// but the extra param is a no-op
+								// https://developer.mozilla.org/en-US/docs/Web/API/Location/reload#parameters
+								location.reload(true);
+								// Maybe emit another error so we can check how many errors we have byeond this code path
+							} else {
+								console.log('skipped refresh');
+							}
+						})
+						.catch((e) => {
+							console.error(e);
+						});
+				}
+			}
+
+			window.addEventListener('error', errorCheck);
+			window.addEventListener('unhandledrejection', errorCheck);
+		</script>
+		<div id="app-loader">
+			<div id="loading-shell">
+				<div id="loading-left-nav">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						role="img"
+						viewBox="0 0 100 100"
+						width="24"
+						height="24"
+						style="margin: 4px"
+					>
+						<path
+							fill-rule="evenodd"
+							clip-rule="evenodd"
+							fill="white"
+							d="M31.5463 31.5462C23.5873 32.693 16.5393 34.5814 11.1945 37.0669C8.17255 38.4722 5.49221 40.1613 3.51061 42.187C1.51225 44.2298 2.48353e-07 46.8655 0 50C0 53.1345 1.51225 55.7703 3.51062 57.8131C5.49221 59.8387 8.17256 61.5278 11.1945 62.9331C16.5393 65.4187 23.5873 67.307 31.5463 68.4538C32.693 76.4127 34.5814 83.4607 37.067 88.8055C38.4723 91.8275 40.1613 94.5078 42.187 96.4894C44.2298 98.4877 46.8655 100 50 100C53.1374 100 55.7729 98.4839 57.8136 96.4828C59.837 94.4986 61.5229 91.8154 62.9251 88.7916C65.4052 83.4434 67.2887 76.3924 68.4342 68.4342C76.3924 67.2886 83.4434 65.4052 88.7916 62.9251C91.8154 61.5229 94.4986 59.837 96.4828 57.8136C98.4839 55.7729 100 53.1373 100 50C100 46.8655 98.4877 44.2298 96.4894 42.187C94.5078 40.1613 91.8275 38.4722 88.8055 37.0669C83.4607 34.5814 76.4127 32.693 68.4538 31.5463C67.307 23.5873 65.4187 16.5393 62.9331 11.1945C61.5278 8.17255 59.8387 5.4922 57.8131 3.51061C55.7702 1.51225 53.1345 2.48353e-07 50 0C46.8655 0 44.2298 1.51225 42.187 3.51062C40.1613 5.49221 38.4722 8.17255 37.0669 11.1945C34.5814 16.5393 32.693 23.5873 31.5463 31.5462ZM40.1218 30.6199C46.6904 30.1307 53.3096 30.1307 59.8782 30.6199C58.8023 24.132 57.2245 18.6816 55.3769 14.7084C54.2152 12.2105 53.0394 10.4985 51.9857 9.46763C50.949 8.45356 50.2908 8.33333 50 8.33333C49.7092 8.33333 49.051 8.45356 48.0143 9.46762C46.9606 10.4985 45.7848 12.2105 44.6232 14.7084C42.7755 18.6816 41.1978 24.132 40.1218 30.6199ZM30.6199 59.8782C30.1308 53.3096 30.1308 46.6904 30.6199 40.1218C24.132 41.1978 18.6816 42.7755 14.7084 44.6232C12.2105 45.7848 10.4985 46.9606 9.46763 48.0144C8.45356 49.051 8.33333 49.7093 8.33333 50C8.33333 50.2908 8.45356 50.9491 9.46763 51.9857C10.4985 53.0395 12.2105 54.2153 14.7084 55.3769C18.6816 57.2245 24.132 58.8023 30.6199 59.8782ZM39.0663 39.0663C47.4383 38.3286 55.9175 38.4413 64.2566 39.4045C73.0116 40.4157 80.3118 42.3074 85.2916 44.6232C87.7895 45.7848 89.5015 46.9606 90.5324 48.0143C91.5464 49.051 91.6667 49.7092 91.6667 50C91.6667 50.2879 91.5478 50.9439 90.5328 51.9789C89.5009 53.0313 87.7868 54.2053 85.2858 55.3651C80.3001 57.6771 72.9936 59.5643 64.2369 60.5758L60.9549 60.9548L60.5758 64.2368C59.5644 72.9936 57.6771 80.3001 55.3651 85.2858C54.2053 87.7868 53.0313 89.5009 51.979 90.5328C50.9439 91.5478 50.288 91.6667 50 91.6667C49.7093 91.6667 49.051 91.5464 48.0144 90.5324C46.9606 89.5015 45.7848 87.7895 44.6232 85.2916C42.3074 80.3118 40.4157 73.0116 39.4045 64.2566C38.4413 55.9175 38.3286 47.4382 39.0663 39.0663Z"
+						/>
+					</svg>
+				</div>
+				<div id="loading-content-container">
+					<div id="loading-top-nav"></div>
+					<div id="loading-content">
+						<style>
+							:root {
+								--vertical-shape1: 730 118;
+								--vertical-shape2: 433 420;
+								--vertical-offset-start: -59;
+
+								--horizontal-shape1: 740 115;
+								--horizontal-shape2: 738 417;
+								--horizontal-offset-start: -273;
+								--horizontal-offset-shape2: -575;
+							}
+							.dark .vertical-ellipse,
+							.dark .horizontal-ellipse {
+								stroke: white;
+							}
+							/* Default states - no animation */
+							.vertical-ellipse {
+								stroke-dasharray: 0 848;
+								stroke-dashoffset: var(--vertical-offset-start);
+								stroke: black;
+								filter: var(--ellipse-drop-shadow);
+							}
+
+							.horizontal-ellipse {
+								stroke-dasharray: 0 850;
+								stroke-dashoffset: var(--horizontal-offset-start);
+								stroke: black;
+								filter: var(--ellipse-drop-shadow);
+							}
+
+							/* Combined infinite loop animation */
+							.animate-infinite .vertical-ellipse {
+								transform-origin: 200px 200px;
+								animation:
+									vertical-infinite-loop 7s linear infinite,
+									vertical-rotation 7s linear infinite;
+								animation-timing-function: linear;
+							}
+
+							.animate-infinite .horizontal-ellipse {
+								transform-origin: 200px 200px;
+								animation:
+									horizontal-infinite-loop 7s linear infinite,
+									horizontal-rotation 7s linear infinite;
+								animation-timing-function: linear;
+							}
+
+							@keyframes vertical-infinite-loop {
+								/* Phase 1: Draw in (0-7.5%) + Hold (7.5-25%) + Transform (25-33.33%) */
+								0% {
+									stroke-dasharray: 0 848;
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: ease-out;
+								}
+								7.5% {
+									stroke-dasharray: var(--vertical-shape1);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: linear;
+								}
+								25% {
+									stroke-dasharray: var(--vertical-shape1);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: ease-in-out;
+								}
+								/* Phase 2: Complete transform (25-33.33%) + Hold (33.33-58.33%) + Return start (58.33-66.67%) */
+								33.33% {
+									stroke-dasharray: var(--vertical-shape2);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: linear;
+								}
+								58.33% {
+									stroke-dasharray: var(--vertical-shape2);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: ease-in-out;
+								}
+								/* Phase 3: Return (58.33-66.67%) + Hold shape1 (66.67-80%) + Disappear (80-86.67%) + Hold empty (86.67-95.56%) */
+								66.67% {
+									stroke-dasharray: var(--vertical-shape1);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: linear;
+								}
+								80% {
+									stroke-dasharray: var(--vertical-shape1);
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: ease-in;
+								}
+								86.67% {
+									stroke-dasharray: 0 848;
+									stroke-dashoffset: var(--vertical-offset-start);
+									animation-timing-function: linear;
+								}
+								100% {
+									stroke-dasharray: 0 848;
+									stroke-dashoffset: var(--vertical-offset-start);
+								}
+							}
+
+							@keyframes horizontal-infinite-loop {
+								/* Phase 1: Draw in (0-7.5%) + Hold (7.5-25%) + Transform (25-33.33%) */
+								0% {
+									stroke-dasharray: 0 850;
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: ease-out;
+								}
+								7.5% {
+									stroke-dasharray: var(--horizontal-shape1);
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: linear;
+								}
+								25% {
+									stroke-dasharray: var(--horizontal-shape1);
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: ease-in-out;
+								}
+								/* Phase 2: Complete transform (25-33.33%) + Hold (33.33-58.33%) + Return start (58.33-66.67%) */
+								33.33% {
+									stroke-dasharray: var(--horizontal-shape2);
+									stroke-dashoffset: var(--horizontal-offset-shape2);
+									animation-timing-function: linear;
+								}
+								58.33% {
+									stroke-dasharray: var(--horizontal-shape2);
+									stroke-dashoffset: var(--horizontal-offset-shape2);
+									animation-timing-function: ease-in-out;
+								}
+								/* Phase 3: Return (58.33-66.67%) + Hold shape1 (66.67-80%) + Disappear (80-86.67%) + Hold empty (86.67-100%) */
+								66.67% {
+									stroke-dasharray: var(--horizontal-shape1);
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: linear;
+								}
+								80% {
+									stroke-dasharray: var(--horizontal-shape1);
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: ease-in;
+								}
+								86.67% {
+									stroke-dasharray: 0 850;
+									stroke-dashoffset: var(--horizontal-offset-start);
+									animation-timing-function: linear;
+								}
+								100% {
+									stroke-dasharray: 0 850;
+									stroke-dashoffset: var(--horizontal-offset-start);
+								}
+							}
+
+							/* 
+							IMPORTANT: Synchronization Guide for Multiple Animations
+							
+							The stroke and rotation animations run simultaneously and must stay synchronized.
+							When modifying timing, update BOTH sets of keyframes:
+							
+							STROKE ANIMATIONS: vertical-infinite-loop, horizontal-infinite-loop
+							ROTATION ANIMATIONS: vertical-rotation, horizontal-rotation
+							
+							Key synchronization points (% values must match exactly):
+							- 0%: Start state
+							- 7.5%: Drawing complete (stroke only)
+							- 25%: Pre-transform hold (stroke), rotation starts here
+							- 33.33%: Transform complete (both)
+							- 58.33%: Transform hold ends, return rotation starts
+							- 66.67%: Return to original rotation complete (both)
+							- 80%: Shape1 hold ends (stroke only)
+							- 86.67%: Disappear complete (stroke only) 
+							- 100%: Cycle complete (both)
+							
+							To modify timing:
+							1. Calculate new percentages based on desired seconds
+							2. Update ALL matching keyframes in BOTH animation sets
+							3. Test that rotations and strokes stay visually aligned
+							*/
+
+							@keyframes vertical-rotation {
+								0%,
+								25% {
+									transform: rotate(0deg);
+									animation-timing-function: cubic-bezier(
+										0.68,
+										-0.6,
+										0.32,
+										1.6
+									);
+								}
+								33.33%,
+								58.33% {
+									transform: rotate(-135deg);
+									animation-timing-function: cubic-bezier(
+										0.68,
+										-0.6,
+										0.32,
+										1.6
+									);
+								}
+								66.67%,
+								100% {
+									transform: rotate(0deg);
+								}
+							}
+
+							@keyframes horizontal-rotation {
+								0%,
+								25% {
+									transform: rotate(0deg);
+									animation-timing-function: cubic-bezier(
+										0.68,
+										-0.6,
+										0.32,
+										1.6
+									);
+								}
+								33.33%,
+								58.33% {
+									transform: rotate(-135deg);
+									animation-timing-function: cubic-bezier(
+										0.68,
+										-0.6,
+										0.32,
+										1.6
+									);
+								}
+								66.67%,
+								100% {
+									transform: rotate(0deg);
+								}
+							}
+
+							/*
+							PERFORMANCE OPTIMIZATIONS
+
+							These optimizations improve animation smoothness and reduce CPU/GPU usage.
+							To remove all performance optimizations, delete everything between these comment blocks.
+							The animation will still work but may be less smooth on slower devices.
+							*/
+
+							/* GPU acceleration and hardware compositing */
+							#loading-anim {
+								/* Forces GPU layer creation - removes these 3 lines to disable GPU acceleration */
+								-webkit-backface-visibility: hidden;
+								backface-visibility: hidden;
+								-webkit-transform: translateZ(0);
+								transform: translateZ(0);
+
+								/* Tells browser what properties will change - remove to let browser guess */
+								will-change: transform;
+
+								/* CSS containment - isolates layout/paint operations - remove to allow normal flow */
+								contain: layout style paint;
+
+								/* Creates new stacking context to prevent expensive repaints - remove for normal stacking */
+								isolation: isolate;
+							}
+
+							/* Per-element optimizations for ellipses */
+							#loading-anim ellipse {
+								/* Keeps stroke width consistent during scaling - remove if not needed */
+								vector-effect: non-scaling-stroke;
+
+								/* Specific animation hints - remove to let browser optimize generically */
+								will-change:
+									stroke-dasharray, stroke-dashoffset, transform, opacity;
+
+								/* Explicit transform center - remove to use default center */
+								transform-origin: 200px 200px;
+
+								/* Paint containment - remove to allow normal paint invalidation */
+								contain: paint;
+							}
+
+							/* 3D rendering optimizations */
+							.animate-infinite .vertical-ellipse,
+							.animate-infinite .horizontal-ellipse {
+								/* 3D rendering context - remove these 2 lines to use 2D rendering */
+								transform-style: preserve-3d;
+								-webkit-transform-style: preserve-3d;
+							}
+
+							/* END PERFORMANCE OPTIMIZATIONS */
+						</style>
+						<div
+							style="
+								width: 45dvw;
+								min-width: fit-content;
+								max-width: 500px;
+								-webkit-font-smoothing: antialiased;
+								-moz-osx-font-smoothing: grayscale;
+							"
+						>
+							<svg
+								width="400"
+								height="400"
+								viewBox="0 0 400 400"
+								xmlns="http://www.w3.org/2000/svg"
+								class="animate-infinite"
+								id="loading-anim"
+								style="
+									shape-rendering: geometricPrecision;
+									transform: scale(0.5);
+								"
+								shape-rendering="geometricPrecision"
+							>
+								<ellipse
+									cx="200"
+									cy="200"
+									rx="64"
+									ry="190"
+									fill="none"
+									stroke-width="15"
+									stroke-linejoin="miter"
+									stroke-miterlimit="10"
+									class="vertical-ellipse"
+								></ellipse>
+								<ellipse
+									cx="200"
+									cy="200"
+									rx="190"
+									ry="64"
+									fill="none"
+									stroke-width="15"
+									stroke-linejoin="miter"
+									stroke-miterlimit="10"
+									class="horizontal-ellipse"
+								></ellipse>
+							</svg>
+						</div>
+					</div>
+					<div id="loading-bottom-nav">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							role="img"
+							viewBox="0 0 100 100"
+							width="32"
+							height="32"
+							style="margin: 4px"
+						>
+							<path
+								fill-rule="evenodd"
+								clip-rule="evenodd"
+								fill="white"
+								d="M31.5463 31.5462C23.5873 32.693 16.5393 34.5814 11.1945 37.0669C8.17255 38.4722 5.49221 40.1613 3.51061 42.187C1.51225 44.2298 2.48353e-07 46.8655 0 50C0 53.1345 1.51225 55.7703 3.51062 57.8131C5.49221 59.8387 8.17256 61.5278 11.1945 62.9331C16.5393 65.4187 23.5873 67.307 31.5463 68.4538C32.693 76.4127 34.5814 83.4607 37.067 88.8055C38.4723 91.8275 40.1613 94.5078 42.187 96.4894C44.2298 98.4877 46.8655 100 50 100C53.1374 100 55.7729 98.4839 57.8136 96.4828C59.837 94.4986 61.5229 91.8154 62.9251 88.7916C65.4052 83.4434 67.2887 76.3924 68.4342 68.4342C76.3924 67.2886 83.4434 65.4052 88.7916 62.9251C91.8154 61.5229 94.4986 59.837 96.4828 57.8136C98.4839 55.7729 100 53.1373 100 50C100 46.8655 98.4877 44.2298 96.4894 42.187C94.5078 40.1613 91.8275 38.4722 88.8055 37.0669C83.4607 34.5814 76.4127 32.693 68.4538 31.5463C67.307 23.5873 65.4187 16.5393 62.9331 11.1945C61.5278 8.17255 59.8387 5.4922 57.8131 3.51061C55.7702 1.51225 53.1345 2.48353e-07 50 0C46.8655 0 44.2298 1.51225 42.187 3.51062C40.1613 5.49221 38.4722 8.17255 37.0669 11.1945C34.5814 16.5393 32.693 23.5873 31.5463 31.5462ZM40.1218 30.6199C46.6904 30.1307 53.3096 30.1307 59.8782 30.6199C58.8023 24.132 57.2245 18.6816 55.3769 14.7084C54.2152 12.2105 53.0394 10.4985 51.9857 9.46763C50.949 8.45356 50.2908 8.33333 50 8.33333C49.7092 8.33333 49.051 8.45356 48.0143 9.46762C46.9606 10.4985 45.7848 12.2105 44.6232 14.7084C42.7755 18.6816 41.1978 24.132 40.1218 30.6199ZM30.6199 59.8782C30.1308 53.3096 30.1308 46.6904 30.6199 40.1218C24.132 41.1978 18.6816 42.7755 14.7084 44.6232C12.2105 45.7848 10.4985 46.9606 9.46763 48.0144C8.45356 49.051 8.33333 49.7093 8.33333 50C8.33333 50.2908 8.45356 50.9491 9.46763 51.9857C10.4985 53.0395 12.2105 54.2153 14.7084 55.3769C18.6816 57.2245 24.132 58.8023 30.6199 59.8782ZM39.0663 39.0663C47.4383 38.3286 55.9175 38.4413 64.2566 39.4045C73.0116 40.4157 80.3118 42.3074 85.2916 44.6232C87.7895 45.7848 89.5015 46.9606 90.5324 48.0143C91.5464 49.051 91.6667 49.7092 91.6667 50C91.6667 50.2879 91.5478 50.9439 90.5328 51.9789C89.5009 53.0313 87.7868 54.2053 85.2858 55.3651C80.3001 57.6771 72.9936 59.5643 64.2369 60.5758L60.9549 60.9548L60.5758 64.2368C59.5644 72.9936 57.6771 80.3001 55.3651 85.2858C54.2053 87.7868 53.0313 89.5009 51.979 90.5328C50.9439 91.5478 50.288 91.6667 50 91.6667C49.7093 91.6667 49.051 91.5464 48.0144 90.5324C46.9606 89.5015 45.7848 87.7895 44.6232 85.2916C42.3074 80.3118 40.4157 73.0116 39.4045 64.2566C38.4413 55.9175 38.3286 47.4382 39.0663 39.0663Z"
+							/>
+						</svg>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div>
+			<script nonce="XhJUDi91T+JNQKa+v6LsQQ==">
+				{
+					__sveltekit_1fpklsm = {
+						base: new URL(".", location).pathname.slice(0, -1)
+					};
+
+					const element = document.currentScript.parentElement;
+
+					Promise.all([
+						import("./_app/immutable/entry/start.DeZxI1dV.js"),
+						import("./_app/immutable/entry/app.CF3t-VHf.js")
+					]).then(([kit, app]) => {
+						kit.start(app, element);
+					});
+				}
+			</script>
+		</div>
+	</body>
+</html>

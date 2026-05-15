@@ -9,10 +9,6 @@ export const EventHistory: React.FC = () => {
     <div className="flex-1 flex flex-col bg-surface-dim overflow-hidden">
       <div className="bg-surface-container-low border-b border-outline-variant p-2 px-3 flex justify-between items-center sticky top-0 z-10">
         <h2 className="font-label-caps text-label-caps text-on-surface">Workflow Event History</h2>
-        <div className="flex gap-2">
-          <button className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-[16px]">filter_list</span></button>
-          <button className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-[16px]">download</span></button>
-        </div>
       </div>
       <div className="p-3 overflow-y-auto text-code-md flex-1">
         <table className="w-full text-left border-collapse">

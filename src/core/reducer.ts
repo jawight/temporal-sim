@@ -26,7 +26,7 @@ export const initialState: SimulationState = {
   tasks: [],
   taskQueue: [],
   eventHistory: [],
-  workers: [],
+  workers: [{ id: Date.now().toString(), status: 'Idle', currentTask: null, color: '#4d8eff' }],
   activeStepId: null,
 };
 
@@ -35,7 +35,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
     case 'ADD_WORKER':
       return {
         ...state,
-        workers: [...state.workers, { id: Date.now().toString(), status: 'Idle', currentTask: null, color: '#4d8eff' }],
+        workers: [...state.workers, { id: Date.now().toString(), status: 'Idle', currentTask: null }],
       };
     case 'RUN_WORKFLOW':
       const newTasks: TemporalTask[] = state.workflowSteps.map(step => ({
