@@ -6,7 +6,7 @@ import { EventHistory } from './components/Server/EventHistory';
 
 const App: React.FC = () => {
   const { state, dispatch } = useContext(SimulationContext)!;
-  const { workers, taskQueue } = state;
+  const { workers, taskQueue, isPaused } = state;
 
   const addWorker = () => {
     dispatch({ type: 'ADD_WORKER', timestamp: new Date().toLocaleTimeString() });
@@ -15,9 +15,13 @@ const App: React.FC = () => {
   return (
     <div className="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">
       <header className="bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop h-16 shrink-0 z-20">
-        <div className="flex items-center gap-gutter">
-          <span className="font-headline-md text-headline-md font-bold text-primary">Temporal Sim v1.0</span>
-        </div>
+        <h1 className="flex-1 font-headline-md text-headline-md font-bold text-primary">Temporal Sim v1.0</h1>
+          <button 
+            onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })} 
+            className={`px-6 font-bold py-3 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors duration-200 border ${isPaused ? 'bg-tertiary text-on-tertiary border-tertiary hover:bg-tertiary-fixed' : 'bg-surface text-on-surface border-outline hover:bg-surface-container-high'}`}
+          >
+            {isPaused ? 'Resume' : 'Pause'}
+          </button>
       </header>
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 flex gap-panel-gap bg-outline-variant p-panel-gap overflow-hidden">

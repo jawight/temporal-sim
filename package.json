@@ -4,10 +4,13 @@
   "type": "module",
   "description": "A web project with interactive canvas objects",
   "main": "main.ts",
+  "homepage": "https://jawight.github.io/temporal-sim",
   "scripts": {
     "start": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "react": "^19.2.6",
@@ -19,6 +22,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.1",
+    "gh-pages": "^6.3.0",
     "tailwindcss": "^4.3.0",
     "typescript": "6.0.3",
     "vite": "8.0.11"

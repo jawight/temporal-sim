@@ -8,6 +8,7 @@ export interface SimulationState {
   workers: WorkerNodeState[];
   activeStepId: string | null;
   nextId: number;
+  isPaused: boolean;
 }
 
 export type SimulationAction =
@@ -17,7 +18,8 @@ export type SimulationAction =
   | { type: 'START_TASK', taskId: string, workerId: string, timestamp: string }
   | { type: 'COMPLETE_TASK', taskId: string, timestamp: string, resultValue?: string }
   | { type: 'FAIL_TASK', taskId: string, timestamp: string }
-  | { type: 'UPDATE_STEP_NAME', stepId: string, name: string };
+  | { type: 'UPDATE_STEP_NAME', stepId: string, name: string }
+  | { type: 'TOGGLE_PAUSE' };
 
 export const initialState: SimulationState = {
   workflowSteps: [
@@ -31,6 +33,7 @@ export const initialState: SimulationState = {
   workers: [{ id: 'worker-1', status: 'Idle', currentTask: null }],
   activeStepId: null,
   nextId: 2,
+  isPaused: false,
 };
 
 function newEventLog(id: string, timestamp: string, eventType: string, details: string, value: string, stepId?: string): EventLog{
@@ -284,6 +287,11 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         workflowSteps: state.workflowSteps.map(step =>
           step.id === action.stepId ? { ...step, name: action.name } : step
         ),
+      };
+    case 'TOGGLE_PAUSE':
+      return {
+        ...state,
+        isPaused: !state.isPaused
       };
     default:
       return state;

@@ -25,8 +25,8 @@ export const TemporalClient: React.FC = () => {
             />
           </div>
         ))}
-        <div className="mt-8 pt-4 border-t border-outline-variant">
-          <h2 className="font-headline-md text-headline-md text-on-surface mb-4">Temporal Client</h2>
+        <div className="mt-8 pt-4 border-t border-outline-variant flex flex-col gap-2">
+          <h2 className="font-headline-md text-headline-md text-on-surface mb-2">Temporal Client</h2>
           <button 
             onClick={() => dispatch({ type: 'RUN_WORKFLOW', timestamp: new Date().toLocaleTimeString() })} 
             className="w-full bg-primary text-on-primary font-bold py-3 rounded-DEFAULT flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors duration-200"

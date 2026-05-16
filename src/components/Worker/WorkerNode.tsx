@@ -4,21 +4,21 @@ import { WorkerNodeState } from '../../core/types';
 
 export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) => {
   const { state, dispatch } = useContext(SimulationContext)!;
-  const { taskQueue } = state;
+  const { taskQueue, isPaused } = state;
 
   useEffect(() => {
     const nextTask = taskQueue[0];
-    if (worker.status === 'Idle' && nextTask) {
+    if (worker.status === 'Idle' && nextTask && !isPaused) {
       const timer = setTimeout(() => {
         dispatch({ type: 'START_TASK', taskId: nextTask.id, workerId: worker.id, timestamp: new Date().toLocaleTimeString() });
       }, 5000); // Wait in queue for 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [worker.status, taskQueue[0]?.id, worker.id, dispatch]);
+  }, [worker.status, taskQueue[0]?.id, worker.id, dispatch, isPaused]);
 
   useEffect(() => {
     const currentTask = worker.currentTask;
-    if (worker.status === 'Working' && currentTask) {
+    if (worker.status === 'Working' && currentTask && !isPaused) {
       const timer = setTimeout(() => {
         const randNum = Math.random() * 101;
         const resultValue = JSON.stringify({
@@ -33,21 +33,21 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
       }, 5000); // Simulate processing time for 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [worker.status, worker.currentTask?.id, dispatch]);
+  }, [worker.status, worker.currentTask?.id, dispatch, isPaused]);
 
   return (
     <div className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-1">
       <span className="p-2 font-body-md text-body-md font-semibold text-on-surface">worker-{worker.id.slice(-4)}</span>
       <div className={`border rounded-DEFAULT p-3 mt-2 flex flex-col gap-2 bg-surface-dim border-secondary/30`}>
         <div className="flex items-center gap-2">
-          <span className="text-secondary text-[16px]">{worker.status === 'Working' ? (<i className='icon-hammer'></i>) : (<div className='polling-symbol'></div>)}</span>
+          <span className="text-secondary text-[16px]">{worker.status === 'Working' ? (<i className='icon-hammer'></i>) : (<div className={`polling-symbol ${isPaused ? 'paused' : ''}`}></div>)}</span>
           <span className="font-code-sm text-code-sm text-on-surface font-bold">
             {worker.status === 'Working' ? `Running: ${worker.currentTask?.stepId}` : 'Polling for tasks...'}
           </span>
         </div>
         {worker.status === 'Working' && (
           <div className='flex flex-col'>
-            <div className="progress-bar border-tertiary"></div>
+            <div className={`progress-bar border-tertiary ${isPaused ? 'paused' : ''}`}></div>
             {
             // <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
             //   <div className="bg-secondary h-1.5 rounded-full w-[65%]"></div>
