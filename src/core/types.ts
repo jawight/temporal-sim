@@ -1,4 +1,4 @@
-export type TaskType = 'Logic' | 'Activity' | 'Timer';
+export type TaskType = 'Workflow' | 'Activity' | 'Timer';
 export type TaskState = 'Scheduled' | 'Started' | 'Completed' | 'Failed' | 'TimedOut';
 
 export interface WorkflowStep {

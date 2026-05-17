@@ -7,7 +7,7 @@ interface TaskTypeBadgeProps {
 function TaskTypeBadge(props: TaskTypeBadgeProps) {
     let colorStyles;
     switch (props.taskType) {
-        case 'Logic': colorStyles = "bg-primary-container text-on-primary-container"; break;
+        case 'Workflow': colorStyles = "bg-primary-container text-on-primary-container"; break;
         case 'Activity': colorStyles = "bg-secondary-container text-on-secondary-container"; break;
         case 'Timer': colorStyles = "bg-tertiary-container text-on-tertiary-container"; break;
     }

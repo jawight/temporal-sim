@@ -25,7 +25,6 @@ export type SimulationAction =
 export const initialState: SimulationState = {
   workflowSteps: [
     { id: '1', type: 'Activity', name: 'CheckInventoryActivity', color: '#adc6ff' },
-    { id: '2', type: 'Logic', name: 'VerifyStock', color: '#adc6ff' },
     { id: '3', type: 'Activity', name: 'ChargeCardActivity', color: '#adc6ff' },
   ],
   tasks: [],
@@ -64,14 +63,14 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         workers: state.workers.filter(w => w.id !== action.workerId)
       };
     case 'RUN_WORKFLOW':{
-      const step = state.workflowSteps[0];
+      const firstStep = state.workflowSteps[0];
       const workflowStartedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Started", "Workflow Type Name", "TemporalSimWorkflow");
       
       const newTask: TemporalTask = {
         id: `task-${nextId++}`,
-        stepId: step.id,
-        type: step.type,
-        name: step.name,
+        stepId: firstStep ? firstStep.id : 'none',
+        type: 'Workflow',
+        name: 'Workflow Logic',
         state: 'Scheduled',
         retryCount: 0
       };
@@ -85,7 +84,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           details = 'Attempt';
           value = (newTask.retryCount + 1).toString();
           break;
-        case 'Logic': 
+        case 'Workflow': 
           eventType = 'Workflow Task Scheduled'; 
           details = 'Task Queue Name';
           value = "TheOnlyOne";
@@ -104,7 +103,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         tasks: [newTask],
         taskQueue: [newTask],
         eventHistory: [taskScheduledLog, workflowStartedLog],
-        activeStepId: step.id,
+        activeStepId: firstStep ? firstStep.id : null,
         nextId: nextId
       };
     }
@@ -122,7 +121,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           details = 'Attempt';
           value = (task.retryCount + 1).toString();
           break;
-        case 'Logic': 
+        case 'Workflow': 
           eventType = 'Workflow Task Scheduled'; 
           details = 'Task Queue Name';
           value = "TheOnlyOne";
@@ -153,7 +152,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           details = 'Activity Type';
           value = task.name;
           break;
-        case 'Logic': 
+        case 'Workflow': 
           eventType = 'Workflow Task Started'; 
           const eventHistoryString = state.eventHistory.map(x => `${x.timestamp},${x.eventType},${x.details}`).join("\n");
           const byteCount = new TextEncoder().encode(eventHistoryString).length;
@@ -187,7 +186,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           details = 'Result';
           value = action.resultValue || JSON.stringify({ data: 'No data' });
           break;
-        case 'Logic': 
+        case 'Workflow': 
           eventType = 'Workflow Task Completed';
           const worker = state.workers.find(w => w.currentTask?.id === action.taskId);
           details = 'Identity';
@@ -204,63 +203,75 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
 
       const completedLog = newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, completedTask.stepId);
       
-      const currentIndex = state.workflowSteps.findIndex(s => s.id === completedTask.stepId);
-      const nextStep = state.workflowSteps[currentIndex + 1];
+      // If completed Activity, schedule Workflow task
+      if (completedTask.type === 'Activity') {
+          const currentIndex = state.workflowSteps.findIndex(s => s.id === completedTask.stepId);
+          const nextStep = state.workflowSteps[currentIndex + 1];
 
-      if (nextStep) {
-        const newTask: TemporalTask = {
-          id: `task-${nextId++}`,
-          stepId: nextStep.id,
-          type: nextStep.type,
-          name: nextStep.name,
-          state: 'Scheduled',
-          retryCount: 0
-        };
+          const newTask: TemporalTask = {
+              id: `task-${nextId++}`,
+              stepId: nextStep ? nextStep.id : 'none',
+              type: 'Workflow',
+              name: 'Workflow Logic',
+              state: 'Scheduled',
+              retryCount: 0
+          };
 
-        let nextEventType;
-        let nextDetails;
-        let nextValue;
-        switch (newTask.type) {
-          case 'Activity': 
-            nextEventType = 'Activity Task Scheduled'; 
-            nextDetails = 'Attempt';
-            nextValue = (newTask.retryCount + 1).toString();
-            break;
-          case 'Logic': 
-            nextEventType = 'Workflow Task Scheduled'; 
-            nextDetails = 'Task Queue Name';
-            nextValue = "TheOnlyOne";
-            break;
-          case 'Timer': 
-            nextEventType = 'Timer Started';
-            nextDetails = 'Start time';
-            nextValue = action.timestamp;
-            break;
-        }
+          const taskScheduledLog = newEventLog((nextId++).toString(), action.timestamp, 'Workflow Task Scheduled', 'Task Queue Name', 'TheOnlyOne', newTask.stepId);
 
-        const taskScheduledLog = newEventLog((nextId++).toString(), action.timestamp, nextEventType || 'Task Scheduled', nextDetails || '', nextValue || '', newTask.stepId);
+          return {
+              ...state,
+              tasks: [...state.tasks, newTask],
+              taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
+              workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+              eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
+              activeStepId: null,
+              nextId: nextId
+          };
+      } else if (completedTask.type === 'Workflow') {
+          // If completed Workflow task, schedule next activity (if any)
+          if (completedTask.stepId !== 'none') {
+             const nextStep = state.workflowSteps.find(s => s.id === completedTask.stepId);
+             if (nextStep) {
+                const newTask: TemporalTask = {
+                  id: `task-${nextId++}`,
+                  stepId: nextStep.id,
+                  type: nextStep.type,
+                  name: nextStep.name,
+                  state: 'Scheduled',
+                  retryCount: 0
+                };
+                
+                let nextEventType = nextStep.type === 'Activity' ? 'Activity Task Scheduled' : 'Timer Started';
+                let nextDetails = nextStep.type === 'Activity' ? 'Attempt' : 'Start time';
+                let nextValue = nextStep.type === 'Activity' ? (newTask.retryCount + 1).toString() : action.timestamp;
+                
+                const taskScheduledLog = newEventLog((nextId++).toString(), action.timestamp, nextEventType, nextDetails, nextValue, newTask.stepId);
+                
+                return {
+                    ...state,
+                    tasks: [...state.tasks, newTask],
+                    taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
+                    workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+                    eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
+                    activeStepId: nextStep.id,
+                    nextId: nextId
+                };
+             }
+          }
+          // Workflow completed
+          const workflowCompletedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Completed", "Result", '{"message": "It is done."}');
 
-        return {
-          ...state,
-          tasks: [...state.tasks, newTask],
-          taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
-          workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
-          eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
-          activeStepId: nextStep.id,
-          nextId: nextId
-        };
-      } else {
-        const workflowCompletedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Completed", "Result", '{"message": "It is done."}');
-
-        return {
-          ...state,
-          workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
-          taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
-          eventHistory: [workflowCompletedLog, completedLog, ...state.eventHistory],
-          activeStepId: null,
-          nextId: nextId
-        };
+          return {
+            ...state,
+            workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+            taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
+            eventHistory: [workflowCompletedLog, completedLog, ...state.eventHistory],
+            activeStepId: null,
+            nextId: nextId
+          };
       }
+      return state;
     }
     case 'FAIL_TASK':{
       const failedTask = [...state.tasks].reverse().find(t => t.id === action.taskId);
@@ -278,13 +289,24 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       let details = 'Attempt';
       let value = (newTask.retryCount + 1).toString();
 
-      const oldEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Scheduled');
+      // Find Scheduled event
+      const oldScheduledEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Scheduled');
+      
+      // Find Started event
+      const oldStartedEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Started');
       
       let newEventHistory = [...state.eventHistory];
-      if (oldEventIndex !== -1) {
-          newEventHistory[oldEventIndex] = newEventLog(state.eventHistory[oldEventIndex].id, action.timestamp, eventType, details, value, failedTask.stepId);
+      
+      // Update Scheduled event
+      if (oldScheduledEventIndex !== -1) {
+          newEventHistory[oldScheduledEventIndex] = newEventLog(state.eventHistory[oldScheduledEventIndex].id, action.timestamp, eventType, details, value, failedTask.stepId);
       } else {
           newEventHistory = [newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, failedTask.stepId), ...newEventHistory];
+      }
+
+      // Update Started event to "Failed"
+      if (oldStartedEventIndex !== -1) {
+          newEventHistory.splice(oldStartedEventIndex, 1);
       }
 
       return {
