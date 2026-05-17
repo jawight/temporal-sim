@@ -12,7 +12,9 @@ export const TemporalClient: React.FC = () => {
         <h2 className="font-headline-md text-headline-md text-on-surface">Workflow Definition</h2>
       </div>
       <div className="p-4 flex flex-col gap-4">
+        <p className='justify-center'>-- Workflow Logic --</p>
         {workflowSteps.map(step => (
+          <>
           <div key={step.id} className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3">
             <div className="flex justify-between items-center">
               <TaskTypeBadge taskType={step.type} />
@@ -24,8 +26,10 @@ export const TemporalClient: React.FC = () => {
               onChange={(e) => dispatch({ type: 'UPDATE_STEP_NAME', stepId: step.id, name: e.target.value })}
             />
           </div>
+          <p className='justify-center'>-- Workflow Logic --</p>
+          </>
         ))}
-        <div className="mt-8 pt-4 border-t border-outline-variant flex flex-col gap-2">
+        <div className="pt-4 border-t border-outline-variant flex flex-col gap-2">
           <h2 className="font-headline-md text-headline-md text-on-surface mb-2">Temporal Client</h2>
           <button 
             onClick={() => dispatch({ type: 'RUN_WORKFLOW', timestamp: new Date().toLocaleTimeString() })} 
