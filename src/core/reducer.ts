@@ -18,6 +18,7 @@ export type SimulationAction =
   | { type: 'START_TASK', taskId: string, workerId: string, timestamp: string }
   | { type: 'COMPLETE_TASK', taskId: string, timestamp: string, resultValue?: string }
   | { type: 'FAIL_TASK', taskId: string, timestamp: string }
+  | { type: 'REMOVE_WORKER', workerId: string }
   | { type: 'UPDATE_STEP_NAME', stepId: string, name: string }
   | { type: 'TOGGLE_PAUSE' };
 
@@ -56,6 +57,11 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         ...state,
         workers: [...state.workers, { id: `worker-${nextId}`, status: 'Idle', currentTask: null }],
         nextId: nextId + 1
+      };
+    case 'REMOVE_WORKER':
+      return {
+        ...state,
+        workers: state.workers.filter(w => w.id !== action.workerId)
       };
     case 'RUN_WORKFLOW':{
       const step = state.workflowSteps[0];
@@ -162,7 +168,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       }
       return {
         ...state,
-        taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
+        taskQueue: state.taskQueue.map(t => t.id === action.taskId ? { ...t, state: 'Started' } : t),
         workers: state.workers.map(w => w.id === action.workerId ? { ...w, status: 'Working', currentTask: task } : w),
         eventHistory: [newEventLog((nextId++).toString(), action.timestamp, eventType || 'Task Started', details || '', value || '', task.stepId), ...state.eventHistory],
         activeStepId: task.stepId,
@@ -170,7 +176,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       };
     }
     case 'COMPLETE_TASK': {
-      const completedTask = state.tasks.find(t => t.id === action.taskId);
+      const completedTask = [...state.tasks].reverse().find(t => t.id === action.taskId);
       if (!completedTask) return state;
       let eventType;
       let details;
@@ -237,7 +243,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         return {
           ...state,
           tasks: [...state.tasks, newTask],
-          taskQueue: [...state.taskQueue, newTask],
+          taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
           workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
           eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
           activeStepId: nextStep.id,
@@ -249,6 +255,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         return {
           ...state,
           workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+          taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
           eventHistory: [workflowCompletedLog, completedLog, ...state.eventHistory],
           activeStepId: null,
           nextId: nextId
@@ -256,7 +263,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       }
     }
     case 'FAIL_TASK':{
-      const failedTask = state.tasks.find(t => t.id === action.taskId);
+      const failedTask = [...state.tasks].reverse().find(t => t.id === action.taskId);
       if (!failedTask) return state;
       
       const updatedWorkers = state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w);
@@ -271,12 +278,21 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       let details = 'Attempt';
       let value = (newTask.retryCount + 1).toString();
 
+      const oldEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Scheduled');
+      
+      let newEventHistory = [...state.eventHistory];
+      if (oldEventIndex !== -1) {
+          newEventHistory[oldEventIndex] = newEventLog(state.eventHistory[oldEventIndex].id, action.timestamp, eventType, details, value, failedTask.stepId);
+      } else {
+          newEventHistory = [newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, failedTask.stepId), ...newEventHistory];
+      }
+
       return {
         ...state,
         workers: updatedWorkers,
         tasks: [...state.tasks, newTask],
-        taskQueue: [...state.taskQueue, newTask],
-        eventHistory: [newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, failedTask.stepId), ...state.eventHistory],
+        taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
+        eventHistory: newEventHistory,
         activeStepId: failedTask.stepId,
         nextId: nextId
       };

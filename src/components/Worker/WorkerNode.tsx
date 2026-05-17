@@ -36,18 +36,31 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
   }, [worker.status, worker.currentTask?.id, dispatch, isPaused]);
 
   return (
-    <div className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-1">
+    <div className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-1 relative">
       <span className="p-2 font-body-md text-body-md font-semibold text-on-surface">worker-{worker.id.slice(-4)}</span>
+      <button
+        onClick={() => {
+          if (worker.status === 'Working') {
+            dispatch({ type: 'FAIL_TASK', taskId: worker.currentTask!.id, timestamp: new Date().toLocaleTimeString() });
+          }
+          dispatch({ type: 'REMOVE_WORKER', workerId: worker.id });
+        }}
+        className="absolute top-1 right-1 text-on-surface-variant hover:text-error"
+      >
+        <i className="icon-x-circle"></i>
+      </button>
       <div className={`border rounded-DEFAULT p-3 mt-2 flex flex-col gap-2 bg-surface-dim border-secondary/30`}>
         <div className="flex items-center gap-2">
-          <span className="text-secondary text-[16px]">{worker.status === 'Working' ? (<i className='icon-hammer'></i>) : (<div className={`polling-symbol ${isPaused ? 'paused' : ''}`}></div>)}</span>
+          <span className="text-secondary text-headline-lg">{worker.status === 'Working' ? 
+              (<i className={`icon-hammer hammer-rotate ${isPaused ? 'paused' : ''}`}></i>) : 
+              (<div className={`polling-symbol bg-primary ${isPaused ? 'paused' : ''}`}></div>)}</span>
           <span className="font-code-sm text-code-sm text-on-surface font-bold">
-            {worker.status === 'Working' ? `Running: ${worker.currentTask?.stepId}` : 'Polling for tasks...'}
+            {worker.status === 'Working' ? worker.currentTask?.name : 'Polling for tasks...'}
           </span>
         </div>
         {worker.status === 'Working' && (
           <div className='flex flex-col'>
-            <div className={`progress-bar border-tertiary ${isPaused ? 'paused' : ''}`}></div>
+            <div className={`progress-bar border-tertiary before:bg-tertiary ${isPaused ? 'paused' : ''}`}></div>
             {
             // <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
             //   <div className="bg-secondary h-1.5 rounded-full w-[65%]"></div>

@@ -141,7 +141,6 @@ body {
     width: 15px;
     aspect-ratio: 1;
     border-radius: 50%;
-    background: #adc6ff;
     box-shadow: 0 0 0 0 #adc6ff44;
     animation: polling-symbol 1s infinite;
 }
@@ -156,7 +155,7 @@ body {
 .progress-bar {
   height: 22px;
   border-radius: 20px;
-  border: 2px solid;
+  border: 2px solid theme(--color-tertiary);
   position: relative;
   background-size: 60% 100%;
 }
@@ -166,7 +165,6 @@ body {
   margin: 2px;
   inset: 0 100% 0 0;
   border-radius: inherit;
-  background: currentColor;
   animation: progress-bar 5s infinite;
 }
 .progress-bar.paused::before {
@@ -174,4 +172,21 @@ body {
 }
 @keyframes progress-bar {
     100% {inset:0}
+}
+
+.hammer-rotate::before {
+  animation: hammer-rotate .4s ease-in infinite alternate;
+  display: inline-block;
+  transform-origin: bottom left;
+}
+.hammer-rotate.paused::before {
+  animation-play-state: paused;
+}
+@keyframes hammer-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(20deg);
+  }
 }

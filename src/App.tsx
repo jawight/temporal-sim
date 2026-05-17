@@ -18,9 +18,9 @@ const App: React.FC = () => {
         <h1 className="flex-1 font-headline-md text-headline-md font-bold text-primary">Temporal Sim v1.0</h1>
           <button 
             onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })} 
-            className={`px-6 font-bold py-3 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors duration-200 border ${isPaused ? 'bg-tertiary text-on-tertiary border-tertiary hover:bg-tertiary-fixed' : 'bg-surface text-on-surface border-outline hover:bg-surface-container-high'}`}
+            className={`font-bold p-2 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors border duration-200 ${isPaused ? 'text-on-surface bg-surface' : 'text-tertiary bg-on-tertiary-container'}`}
           >
-            {isPaused ? 'Resume' : 'Pause'}
+            {isPaused ? <i className='icon-play'></i> : <i className='icon-pause'></i>}
           </button>
       </header>
       <div className="flex flex-1 overflow-hidden">
@@ -37,13 +37,15 @@ const App: React.FC = () => {
               <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-2">
                 {taskQueue.map((task) => (
                   <div key={task.id} className="bg-surface-container-low flex items-center p-3 border border-outline-variant rounded-DEFAULT gap-4">
-                    <i className="icon-scheduled text-primary text-headline-lg"></i>
+                    <div className={`${task.state === 'Started' ? 'bg-tertiary-container' : 'bg-primary-container'} p-2 rounded-4xl`}>
+                    <i className={`${task.state === 'Started' ? 'icon-play text-on-tertiary-container ' : 'icon-scheduled text-on-primary-container'} text-headline-lg`}></i>
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-body-md text-body-md font-semibold text-on-surface truncate">{task.stepId}</span>
                         <span className="bg-primary-container text-on-primary-container font-code-sm text-code-sm px-1.5 py-0.5 rounded-sm text-[10px]">{task.type}</span>
+                        <span className="font-body-md text-body-md font-semibold text-on-surface truncate">{task.name}</span>
                       </div>
-                      <div className="font-code-sm text-code-sm text-on-surface-variant truncate">TaskID: {task.id.slice(-6)} | {task.state}</div>
+                      <div className="font-code-sm text-code-sm text-on-surface-variant truncate">State: {task.state}</div>
                     </div>
                   </div>
                 ))}
