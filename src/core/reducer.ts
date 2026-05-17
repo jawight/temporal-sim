@@ -285,28 +285,46 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         retryCount: failedTask.retryCount + 1
       };
 
-      let eventType = 'Activity Task Scheduled'; 
-      let details = 'Attempt';
-      let value = (newTask.retryCount + 1).toString();
+      let scheduledEventType = failedTask.type === 'Workflow' ? 'Workflow Task Scheduled' : 'Activity Task Scheduled';
+      let scheduledDetails = failedTask.type === 'Workflow' ? 'Task Queue Name' : 'Attempt';
+      let scheduledValue = failedTask.type === 'Workflow' ? 'TheOnlyOne' : (newTask.retryCount + 1).toString();
+      let startedEventType = failedTask.type === 'Workflow' ? 'Workflow Task Started' : 'Activity Task Started';
+      let failureEventType = failedTask.type === 'Workflow' ? 'Workflow Task Failed' : 'Activity Task Failed';
 
       // Find Scheduled event
-      const oldScheduledEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Scheduled');
+      const oldScheduledEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === scheduledEventType);
       
       // Find Started event
-      const oldStartedEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === 'Activity Task Started');
+      const oldStartedEventIndex = state.eventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === startedEventType);
       
       let newEventHistory = [...state.eventHistory];
       
-      // Update Scheduled event
-      if (oldScheduledEventIndex !== -1) {
-          newEventHistory[oldScheduledEventIndex] = newEventLog(state.eventHistory[oldScheduledEventIndex].id, action.timestamp, eventType, details, value, failedTask.stepId);
+      // Update/Add Failure event
+      if (failedTask.type !== 'Activity') {
+          const lastEvent = newEventHistory[0];
+          if (lastEvent && lastEvent.eventType === failureEventType && lastEvent.stepId === failedTask.stepId) {
+              // Update timestamp of the existing failure event
+              newEventHistory[0] = { ...lastEvent, timestamp: action.timestamp };
+          } else {
+              // Add new Failure event
+              newEventHistory = [newEventLog((nextId++).toString(), action.timestamp, failureEventType, 'Failure Message', 'Example failure message', failedTask.stepId), ...newEventHistory];
+          }
+      }
+      
+      // Update/Add Scheduled event
+      const scheduledEventIndex = newEventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === scheduledEventType);
+      if (failedTask.type === 'Activity' && scheduledEventIndex !== -1) {
+          newEventHistory[scheduledEventIndex] = { ...newEventHistory[scheduledEventIndex], timestamp: action.timestamp, value: scheduledValue };
       } else {
-          newEventHistory = [newEventLog((nextId++).toString(), action.timestamp, eventType, details, value, failedTask.stepId), ...newEventHistory];
+          newEventHistory = [newEventLog((nextId++).toString(), action.timestamp, scheduledEventType, scheduledDetails, scheduledValue, failedTask.stepId), ...newEventHistory];
       }
 
-      // Update Started event to "Failed"
-      if (oldStartedEventIndex !== -1) {
-          newEventHistory.splice(oldStartedEventIndex, 1);
+      // Remove old Started event
+      if (failedTask.type !== 'Workflow') {
+          const startedEventIndex = newEventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === startedEventType);
+          if (startedEventIndex !== -1) {
+              newEventHistory.splice(startedEventIndex, 1);
+          }
       }
 
       return {
