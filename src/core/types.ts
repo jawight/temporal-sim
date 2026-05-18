@@ -30,6 +30,13 @@ export interface WorkerNodeState {
   id: string;
   status: 'Idle' | 'Working' | 'Error';
   currentTask: TemporalTask | null;
+  cachedWorkflowId: string | null;
+}
+
+export interface ReplayState {
+  isActive: boolean;
+  stepIndex: number;
+  highlightTarget: 'definition' | 'history';
 }
 
 export function nextPastel(seed: number) { 

@@ -1,9 +1,11 @@
-import { WorkflowStep, TemporalTask, EventLog, WorkerNodeState } from './types';
+import { WorkflowStep, TemporalTask, EventLog, WorkerNodeState, ReplayState } from './types';
 
 export interface SimulationState {
   workflowSteps: WorkflowStep[];
   tasks: TemporalTask[];
-  taskQueue: TemporalTask[]; // Add this
+  taskQueue: TemporalTask[];
+  currentWorkflowId: string | null;
+  replayState: ReplayState;
   eventHistory: EventLog[];
   workers: WorkerNodeState[];
   activeStepId: string | null;
@@ -19,6 +21,10 @@ export type SimulationAction =
   | { type: 'COMPLETE_TASK', taskId: string, timestamp: string, resultValue?: string }
   | { type: 'FAIL_TASK', taskId: string, timestamp: string }
   | { type: 'REMOVE_WORKER', workerId: string }
+  | { type: 'REQUEUE_TASK', taskId: string }
+  | { type: 'START_REPLAY', stepIndex: number }
+  | { type: 'ADVANCE_REPLAY' }
+  | { type: 'FINISH_REPLAY' }
   | { type: 'UPDATE_STEP_NAME', stepId: string, name: string }
   | { type: 'TOGGLE_PAUSE' };
 
@@ -30,10 +36,12 @@ export const initialState: SimulationState = {
   tasks: [],
   taskQueue: [],
   eventHistory: [],
-  workers: [{ id: 'worker-1', status: 'Idle', currentTask: null }],
+  workers: [{ id: 'worker-1', status: 'Idle', currentTask: null, cachedWorkflowId: null }],
   activeStepId: null,
   nextId: 2,
   isPaused: false,
+  currentWorkflowId: null,
+  replayState: { isActive: false, stepIndex: 0, highlightTarget: 'definition' }
 };
 
 function newEventLog(id: string, timestamp: string, eventType: string, details: string, value: string, stepId?: string): EventLog{
@@ -52,16 +60,32 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
 
   switch (action.type) {
     case 'ADD_WORKER':
+      const newWorker: WorkerNodeState = { id: `worker-${nextId}`, status: 'Idle', currentTask: null, cachedWorkflowId: null };
       return {
         ...state,
-        workers: [...state.workers, { id: `worker-${nextId}`, status: 'Idle', currentTask: null }],
+        workers: [...state.workers, newWorker],
         nextId: nextId + 1
       };
-    case 'REMOVE_WORKER':
+    case 'REMOVE_WORKER': {
+      const worker = state.workers.find(w => w.id === action.workerId);
+      if (worker && worker.currentTask) {
+        return {
+          ...state,
+          workers: state.workers.filter(w => w.id !== action.workerId),
+          taskQueue: state.taskQueue.map(t => t.id === worker.currentTask?.id ? { ...t, state: 'Scheduled' } : t)
+        };
+      }
       return {
         ...state,
         workers: state.workers.filter(w => w.id !== action.workerId)
       };
+    }
+    case 'REQUEUE_TASK': {
+      return {
+        ...state,
+        taskQueue: state.taskQueue.map(t => t.id === action.taskId ? { ...t, state: 'Scheduled' } : t),
+      };
+    }
     case 'RUN_WORKFLOW':{
       const firstStep = state.workflowSteps[0];
       const workflowStartedLog = newEventLog((nextId++).toString(), action.timestamp, "Workflow Execution Started", "Workflow Type Name", "TemporalSimWorkflow");
@@ -102,11 +126,31 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         ...state,
         tasks: [newTask],
         taskQueue: [newTask],
+        currentWorkflowId: newTask.id,
         eventHistory: [taskScheduledLog, workflowStartedLog],
         activeStepId: firstStep ? firstStep.id : null,
         nextId: nextId
       };
     }
+    case 'START_REPLAY':
+      return {
+        ...state,
+        replayState: { isActive: true, stepIndex: action.stepIndex, highlightTarget: 'definition' }
+      };
+    case 'ADVANCE_REPLAY':
+      return {
+        ...state,
+        replayState: {
+          ...state.replayState,
+          highlightTarget: state.replayState.highlightTarget === 'definition' ? 'history' : 'definition',
+          stepIndex: state.replayState.highlightTarget === 'history' ? state.replayState.stepIndex + 1 : state.replayState.stepIndex
+        }
+      };
+    case 'FINISH_REPLAY':
+      return {
+        ...state,
+        replayState: { isActive: false, stepIndex: 0, highlightTarget: 'definition' }
+      };
     case 'SCHEDULE_TASK':{
       const task: TemporalTask = {
         ...action.task,
@@ -165,7 +209,13 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
             taskQueue: state.taskQueue.filter(t => t.id !== action.taskId)
           };
       }
-      return {
+      
+      const worker = state.workers.find(w => w.id === action.workerId);
+      const isRehydrationNeeded = (task.type === 'Workflow' || task.type === 'Activity') &&
+                                   state.eventHistory.length > 0 &&
+                                   worker?.cachedWorkflowId !== state.currentWorkflowId;
+
+      const baseState: SimulationState = {
         ...state,
         taskQueue: state.taskQueue.map(t => t.id === action.taskId ? { ...t, state: 'Started' } : t),
         workers: state.workers.map(w => w.id === action.workerId ? { ...w, status: 'Working', currentTask: task } : w),
@@ -173,10 +223,26 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
         activeStepId: task.stepId,
         nextId: nextId
       };
+      
+      if (isRehydrationNeeded) {
+          return { ...baseState, replayState: { isActive: true, stepIndex: 0, highlightTarget: 'definition' } };
+      }
+      
+      return baseState;
     }
     case 'COMPLETE_TASK': {
       const completedTask = [...state.tasks].reverse().find(t => t.id === action.taskId);
       if (!completedTask) return state;
+      
+      const worker = state.workers.find(w => w.currentTask?.id === action.taskId);
+      const isTimer = completedTask.type === 'Timer';
+      
+      const updatedWorkers = state.workers.map(w => {
+          if (w.id === worker?.id) return { ...w, cachedWorkflowId: isTimer ? null : state.currentWorkflowId };
+          if (isTimer) return { ...w, cachedWorkflowId: null };
+          return w;
+      });
+
       let eventType;
       let details;
       let value;
@@ -188,7 +254,6 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
           break;
         case 'Workflow': 
           eventType = 'Workflow Task Completed';
-          const worker = state.workers.find(w => w.currentTask?.id === action.taskId);
           details = 'Identity';
           value = worker?.id?.toString() ?? "Unknown";
           break;
@@ -223,7 +288,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
               ...state,
               tasks: [...state.tasks, newTask],
               taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
-              workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+              workers: updatedWorkers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
               eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
               activeStepId: null,
               nextId: nextId
@@ -252,7 +317,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
                     ...state,
                     tasks: [...state.tasks, newTask],
                     taskQueue: [...state.taskQueue.filter(t => t.id !== action.taskId), newTask],
-                    workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+                    workers: updatedWorkers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
                     eventHistory: [taskScheduledLog, completedLog, ...state.eventHistory],
                     activeStepId: nextStep.id,
                     nextId: nextId
@@ -264,9 +329,18 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
 
           return {
             ...state,
-            workers: state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+            workers: updatedWorkers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
             taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
             eventHistory: [workflowCompletedLog, completedLog, ...state.eventHistory],
+            activeStepId: null,
+            nextId: nextId
+          };
+      } else if (completedTask.type === 'Timer') {
+          return {
+            ...state,
+            workers: updatedWorkers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w),
+            taskQueue: state.taskQueue.filter(t => t.id !== action.taskId),
+            eventHistory: [completedLog, ...state.eventHistory],
             activeStepId: null,
             nextId: nextId
           };
@@ -277,7 +351,7 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       const failedTask = [...state.tasks].reverse().find(t => t.id === action.taskId);
       if (!failedTask) return state;
       
-      const updatedWorkers = state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w);
+      const updatedWorkers: WorkerNodeState[] = state.workers.map(w => w.currentTask?.id === action.taskId ? { ...w, status: 'Idle', currentTask: null } : w);
       
       const newTask: TemporalTask = {
         ...failedTask,

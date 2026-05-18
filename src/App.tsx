@@ -6,11 +6,39 @@ import { EventHistory } from './components/Server/EventHistory';
 
 const App: React.FC = () => {
   const { state, dispatch } = useContext(SimulationContext)!;
-  const { workers, taskQueue, isPaused } = state;
+  const { workers, taskQueue, isPaused, replayState, eventHistory } = state;
 
   const addWorker = () => {
     dispatch({ type: 'ADD_WORKER', timestamp: new Date().toLocaleTimeString() });
   };
+
+  React.useEffect(() => {
+    if (!replayState.isActive) return;
+
+    const timer = setTimeout(() => {
+        // Simple completion check: does the event history contain a 'Completed' log for the current step?
+        // Step IDs in workflowSteps start at '1'.
+        const currentStepId = (replayState.stepIndex + 1).toString();
+        const isCompleted = eventHistory.some(log => log.stepId === currentStepId && log.eventType.includes('Completed'));
+
+        if (isCompleted || replayState.highlightTarget === 'history') {
+             // If we've already done history (highlightTarget === 'history'), 
+             // and we are here, it means we should probably advance.
+             // Wait, the plan says: "Cycle highlights (1-second intervals) between the Workflow Definition steps and the Event History logs."
+             // And "If [completed log exists] it advances. If not, the animation stops."
+             
+             // My implementation of ADVANCE_REPLAY in reducer toggles highlightTarget:
+             // highlightTarget: state.replayState.highlightTarget === 'definition' ? 'history' : 'definition'
+             
+             // This needs to be more robust.
+             dispatch({ type: 'ADVANCE_REPLAY' });
+        } else {
+            dispatch({ type: 'FINISH_REPLAY' });
+        }
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [replayState.isActive, replayState.stepIndex, replayState.highlightTarget, eventHistory, dispatch]);
 
   return (
     <div className="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">

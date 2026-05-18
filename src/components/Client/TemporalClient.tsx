@@ -4,7 +4,7 @@ import TaskTypeBadge from '../TaskTypeBadge';
 
 export const TemporalClient: React.FC = () => {
   const { state, dispatch } = useContext(SimulationContext)!;
-  const { workflowSteps } = state;
+  const { workflowSteps, replayState } = state;
 
   return (
     <section className="flex flex-col bg-surface w-1/4 min-w-75 h-full overflow-y-auto">
@@ -13,9 +13,11 @@ export const TemporalClient: React.FC = () => {
       </div>
       <div className="p-4 flex flex-col gap-4">
         <p className='justify-center'>-- Workflow Logic --</p>
-        {workflowSteps.map(step => (
+        {workflowSteps.map((step, index) => {
+          const isHighlighted = replayState.isActive && replayState.highlightTarget === 'definition' && replayState.stepIndex === index;
+          return (
           <>
-          <div key={step.id} className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-3 flex flex-col gap-3">
+          <div key={step.id} className={`bg-surface-container-high border rounded-DEFAULT p-3 flex flex-col gap-3 transition-colors ${isHighlighted ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] border-yellow-400' : 'border-outline-variant'}`}>
             <div className="flex justify-between items-center">
               <TaskTypeBadge taskType={step.type} />
             </div>
@@ -28,7 +30,8 @@ export const TemporalClient: React.FC = () => {
           </div>
           <p className='justify-center'>-- Workflow Logic --</p>
           </>
-        ))}
+          );
+        })}
         <div className="pt-4 border-t border-outline-variant flex flex-col gap-2">
           <h2 className="font-headline-md text-headline-md text-on-surface mb-2">Temporal Client</h2>
           <button 
