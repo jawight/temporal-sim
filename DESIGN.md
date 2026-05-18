@@ -48,6 +48,7 @@ colors:
   background: '#0b1326'
   on-background: '#dae2fd'
   surface-variant: '#2d3449'
+  warning: 'goldenrod'
 typography:
   headline-lg:
     fontFamily: Inter
