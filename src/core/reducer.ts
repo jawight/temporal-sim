@@ -11,6 +11,7 @@ export interface SimulationState {
   activeStepId: string | null;
   nextId: number;
   isPaused: boolean;
+  simulationSpeed: number;
 }
 
 export type SimulationAction =
@@ -26,7 +27,8 @@ export type SimulationAction =
   | { type: 'ADVANCE_REPLAY' }
   | { type: 'FINISH_REPLAY' }
   | { type: 'UPDATE_STEP_NAME', stepId: string, name: string }
-  | { type: 'TOGGLE_PAUSE' };
+  | { type: 'TOGGLE_PAUSE' }
+  | { type: 'SET_SPEED', speed: number };
 
 export const initialState: SimulationState = {
   workflowSteps: [
@@ -43,6 +45,7 @@ export const initialState: SimulationState = {
   activeStepId: null,
   nextId: 2,
   isPaused: false,
+  simulationSpeed: 1000,
   currentWorkflowId: null,
   replayState: null
 };
@@ -122,6 +125,11 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
       return {
         ...state,
         isPaused: !state.isPaused
+      };
+    case 'SET_SPEED':
+      return {
+        ...state,
+        simulationSpeed: action.speed
       };
     default:
       return state;
@@ -360,14 +368,14 @@ function failTask(state: SimulationState, taskId: string, timestamp: string): Si
 
   // Update/Add Failure event
   if (failedTask.type !== 'Activity') {
-      const lastEvent = newEventHistory[0];
-      if (lastEvent && lastEvent.eventType === failureEventType && lastEvent.stepId === failedTask.stepId) {
-          // Update timestamp of the existing failure event
-          newEventHistory[0] = { ...lastEvent, timestamp: timestamp };
-      } else {
-          // Add new Failure event
-          newEventHistory = [newEventLog((nextId++).toString(), timestamp, failureEventType, 'Failure Message', 'Example failure message', failedTask.stepId), ...newEventHistory];
-      }
+    const lastEvent = newEventHistory[0];
+    if (lastEvent && lastEvent.eventType === failureEventType && lastEvent.stepId === failedTask.stepId) {
+        // Update timestamp of the existing failure event
+        newEventHistory[0] = { ...lastEvent, timestamp: timestamp };
+    } else {
+        // Add new Failure event
+        newEventHistory = [newEventLog((nextId++).toString(), timestamp, failureEventType, 'Failure Message', 'Example failure message', failedTask.stepId), ...newEventHistory];
+        }
   }
 
   // Update/Add Scheduled event
@@ -380,10 +388,10 @@ function failTask(state: SimulationState, taskId: string, timestamp: string): Si
 
   // Remove old Started event
   if (failedTask.type !== 'Workflow') {
-      const startedEventIndex = newEventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === startedEventType);
-      if (startedEventIndex !== -1) {
-          newEventHistory.splice(startedEventIndex, 1);
-      }
+    const startedEventIndex = newEventHistory.findIndex(e => e.stepId === failedTask.stepId && e.eventType === startedEventType);
+    if (startedEventIndex !== -1) {
+        newEventHistory.splice(startedEventIndex, 1);
+    }
   }
 
   return {
@@ -473,12 +481,23 @@ function advanceReplay(state: SimulationState): SimulationState {
     }
   };
 
-  // NOTE: If there are no events for this step, then it hasn't run yet and we should finish the replay animation.
+  // NOTE: If there are no events for this step, then it hasn't run yet and we should try to move to the next step.
   if (!state.eventHistory.find(e => e.stepId === step.id)) {
-    return {
-      ...state,
-      replayState: null,
-    }
+      const nextStepIdx = rpState.stepIndex + 1;
+      if (nextStepIdx < state.workflowSteps.length) {
+          return {
+              ...state,
+              replayState: {
+                  ...rpState,
+                  highlightTarget: 'definition',
+                  stepIndex: nextStepIdx,
+              }
+          }
+      }
+      return {
+          ...state,
+          replayState: null,
+      }
   }
 
   const nextStepIdx = rpState.stepIndex + 1;

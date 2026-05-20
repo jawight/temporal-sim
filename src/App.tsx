@@ -6,7 +6,7 @@ import { EventHistory } from './components/Server/EventHistory';
 
 const App: React.FC = () => {
   const { state, dispatch } = useContext(SimulationContext)!;
-  const { workers, taskQueue, isPaused, replayState, eventHistory } = state;
+  const { workers, taskQueue, isPaused, replayState, eventHistory, simulationSpeed } = state;
 
   const addWorker = () => {
     dispatch({ type: 'ADD_WORKER', timestamp: new Date().toLocaleTimeString() });
@@ -17,28 +17,42 @@ const App: React.FC = () => {
 
     const timer = setTimeout(() => {
         const currentStepId = (replayState.stepIndex + 1).toString();
-        const isCompleted = eventHistory.some(log => log.stepId === currentStepId && log.eventType.includes('Completed'));
-
-        if (isCompleted || replayState.highlightTarget === 'history') {
+        const stepEvents = eventHistory.filter(log => log.stepId === currentStepId);
+        const isCompleted = stepEvents.some(log => log.eventType.includes('Completed'));
+        
+        if (isCompleted || replayState.highlightTarget === 'history' || stepEvents.length === 0) {
              dispatch({ type: 'ADVANCE_REPLAY' });
         } else {
             dispatch({ type: 'FINISH_REPLAY' });
         }
-    }, 1000);
+    }, simulationSpeed);
     
     return () => clearTimeout(timer);
-  }, [replayState?.stepIndex, replayState?.highlightTarget, eventHistory, dispatch]);
+  }, [replayState?.stepIndex, replayState?.highlightTarget, eventHistory, dispatch, simulationSpeed]);
 
   return (
     <div className="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">
       <header className="bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop h-16 shrink-0 z-20">
         <h1 className="flex-1 font-headline-md text-headline-md font-bold text-primary">Temporal Sim</h1>
-          <button 
-            onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })} 
-            className={`font-bold p-2 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors border duration-200 ${isPaused ? 'text-on-surface bg-surface' : 'text-tertiary bg-on-tertiary-container'}`}
-          >
-            {isPaused ? <i className='icon-play'></i> : <i className='icon-pause'></i>}
-          </button>
+        
+        <div className="flex items-center gap-4 text-on-surface">
+          <span className="font-label-md">Speed: {simulationSpeed}ms</span>
+          <input 
+            type="range" 
+            min="100" 
+            max="5000" 
+            step="100" 
+            value={simulationSpeed} 
+            onChange={(e) => dispatch({ type: 'SET_SPEED', speed: Number(e.target.value) })}
+            className="accent-primary"
+          />
+        <button 
+          onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })} 
+          className={`font-bold p-2 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors border duration-200 ${isPaused ? 'text-on-surface bg-surface' : 'text-tertiary bg-on-tertiary-container'}`}
+        >
+          {isPaused ? <i className='icon-play'></i> : <i className='icon-pause'></i>}
+        </button>
+        </div>
       </header>
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 flex gap-panel-gap bg-outline-variant p-panel-gap overflow-hidden">
