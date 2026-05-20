@@ -5,7 +5,6 @@ export interface WorkflowStep {
   id: string;
   type: TaskType;
   name: string;
-  color: string;
 }
 
 export interface EventLog {

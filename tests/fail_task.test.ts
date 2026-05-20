@@ -7,8 +7,6 @@ describe('fail task', () => {
 
     // 1. Run workflow
     state = simulationReducer(state, { type: 'RUN_WORKFLOW', timestamp: '1' });
-    // Implicit Workflow Task is scheduled. Complete it to start the first activity.
-    state = simulationReducer(state, { type: 'COMPLETE_TASK', taskId: state.tasks[state.tasks.length - 1].id, timestamp: '1.5' });
     
     const taskId = state.tasks[state.tasks.length - 1].id;
     const stepId = state.tasks[state.tasks.length - 1].stepId;
@@ -33,8 +31,6 @@ describe('fail task', () => {
 
     // 1. Run workflow and start the task
     state = simulationReducer(state, { type: 'RUN_WORKFLOW', timestamp: '1' });
-    // Complete Workflow Task
-    state = simulationReducer(state, { type: 'COMPLETE_TASK', taskId: state.tasks[state.tasks.length - 1].id, timestamp: '1.5' });
     
     const taskId = state.tasks[state.tasks.length - 1].id;
     const workerId = state.workers[0].id;

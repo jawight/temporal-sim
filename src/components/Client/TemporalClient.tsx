@@ -12,15 +12,11 @@ export const TemporalClient: React.FC = () => {
         <h2 className="font-headline-md text-headline-md text-on-surface">Workflow Definition</h2>
       </div>
       <div className="p-4 flex flex-col gap-4">
-        <p className='justify-center'>-- Workflow Logic --</p>
         {workflowSteps.map((step, index) => {
           const isHighlighted = replayState && replayState.highlightTarget === 'definition' && replayState.stepIndex === index;
           return (
-          <>
-          <div key={step.id} className={`bg-surface-container-high border rounded-DEFAULT p-3 flex flex-col gap-3 transition-colors ${isHighlighted ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] border-yellow-400' : 'border-outline-variant'}`}>
-            <div className="flex justify-between items-center">
-              <TaskTypeBadge taskType={step.type} />
-            </div>
+          <div key={step.id} className={`flex-row justify-between items-center bg-surface-container-high border rounded-DEFAULT p-3 flex gap-3 transition-colors ${isHighlighted ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] border-yellow-400' : 'border-outline-variant'}`}>
+            <TaskTypeBadge taskType={step.type} />
             <input 
               className="w-full bg-surface border border-outline-variant rounded-DEFAULT px-2 py-1 text-body-sm text-on-surface focus:outline-none focus:border-primary" 
               type="text" 
@@ -28,8 +24,6 @@ export const TemporalClient: React.FC = () => {
               onChange={(e) => dispatch({ type: 'UPDATE_STEP_NAME', stepId: step.id, name: e.target.value })}
             />
           </div>
-          <p className='justify-center'>-- Workflow Logic --</p>
-          </>
           );
         })}
         <div className="pt-4 border-t border-outline-variant flex flex-col gap-2">

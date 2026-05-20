@@ -30,8 +30,11 @@ export type SimulationAction =
 
 export const initialState: SimulationState = {
   workflowSteps: [
-    { id: '1', type: 'Activity', name: 'CheckInventoryActivity', color: '#adc6ff' },
-    { id: '3', type: 'Activity', name: 'ChargeCardActivity', color: '#adc6ff' },
+    { id: '1', type: 'Workflow', name: 'Workflow Logic' },
+    { id: '2', type: 'Activity', name: 'CheckInventoryActivity' },
+    { id: '3', type: 'Workflow', name: 'Workflow Logic' },
+    { id: '4', type: 'Activity', name: 'ChargeCardActivity' },
+    { id: '5', type: 'Workflow', name: 'Workflow Logic' },
   ],
   tasks: [],
   taskQueue: [],
@@ -202,7 +205,7 @@ function startTask(state: SimulationState, taskId: string, workerId: string, tim
     };
     
     if (isRehydrationNeeded) {
-        return { ...baseState, replayState: { isActive: true, stepIndex: 0, historyIndex: state.eventHistory.length-1, highlightTarget: 'definition' } };
+        return { ...baseState, replayState: { stepIndex: 0, historyIndex: state.eventHistory.length-1, highlightTarget: 'definition' } };
     }
     
     return baseState;
@@ -255,8 +258,8 @@ function completeTask(state: SimulationState, taskId: string, timestamp: string,
       const newTask: TemporalTask = {
           id: `task-${nextId++}`,
           stepId: nextStep ? nextStep.id : 'none',
-          type: 'Workflow',
-          name: 'Workflow Logic',
+          type: nextStep ? nextStep.type : 'Workflow',
+          name: nextStep ? nextStep.name : 'Workflow Logic',
           state: 'Scheduled',
           retryCount: 0
       };
@@ -275,7 +278,8 @@ function completeTask(state: SimulationState, taskId: string, timestamp: string,
   } else if (completedTask.type === 'Workflow') {
       // If completed Workflow task, schedule next activity (if any)
       if (completedTask.stepId !== 'none') {
-          const nextStep = state.workflowSteps.find(s => s.id === completedTask.stepId);
+          const currentIndex = state.workflowSteps.findIndex(s => s.id === completedTask.stepId);
+          const nextStep = state.workflowSteps[currentIndex + 1];
           if (nextStep) {
             const newTask: TemporalTask = {
               id: `task-${nextId++}`,
@@ -401,8 +405,8 @@ function runWorkflow(state: SimulationState, timestamp: string): SimulationState
   const newTask: TemporalTask = {
     id: `task-${nextId++}`,
     stepId: firstStep ? firstStep.id : 'none',
-    type: 'Workflow',
-    name: 'Workflow Logic',
+    type: firstStep ? firstStep.type : 'Workflow',
+    name: firstStep ? firstStep.name : 'Workflow Logic',
     state: 'Scheduled',
     retryCount: 0
   };
