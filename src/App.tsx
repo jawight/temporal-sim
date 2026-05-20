@@ -43,7 +43,7 @@ const App: React.FC = () => {
   return (
     <div className="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">
       <header className="bg-surface-container-low border-b border-outline-variant flex justify-between items-center w-full px-margin-desktop h-16 shrink-0 z-20">
-        <h1 className="flex-1 font-headline-md text-headline-md font-bold text-primary">Temporal Sim v1.0</h1>
+        <h1 className="flex-1 font-headline-md text-headline-md font-bold text-primary">Temporal Sim</h1>
           <button 
             onClick={() => dispatch({ type: 'TOGGLE_PAUSE' })} 
             className={`font-bold p-2 rounded-DEFAULT flex items-center justify-center gap-2 transition-colors border duration-200 ${isPaused ? 'text-on-surface bg-surface' : 'text-tertiary bg-on-tertiary-container'}`}
