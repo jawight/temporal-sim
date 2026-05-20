@@ -20,8 +20,8 @@ export const EventHistory: React.FC = () => {
             </tr>
           </thead>
           <tbody className="font-code-sm text-on-surface">
-            {eventHistory.map((event) => {
-              const isHighlighted = replayState.isActive && replayState.highlightTarget === 'history' && event.stepId === (replayState.stepIndex + 1).toString();
+            {eventHistory.map((event, idx) => {
+              const isHighlighted = replayState && replayState.highlightTarget === 'history' && idx === replayState.historyIndex;
               return (
               <tr key={event.id} className={`border-b border-outline-variant/30 hover:bg-surface-container-highest transition-colors ${activeStepId === event.stepId ? 'bg-primary/10' : ''} ${isHighlighted ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] border-yellow-400' : ''}`}>
                 <td className="py-2 px-3 text-on-surface-variant opacity-50">{event.timestamp}</td>

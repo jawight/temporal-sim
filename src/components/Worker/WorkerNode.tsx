@@ -8,17 +8,17 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
 
   useEffect(() => {
     const nextTask = taskQueue[0];
-    if (worker.status === 'Idle' && nextTask && !isPaused && !replayState.isActive) {
+    if (worker.status === 'Idle' && nextTask && !isPaused && !replayState) {
       const timer = setTimeout(() => {
         dispatch({ type: 'START_TASK', taskId: nextTask.id, workerId: worker.id, timestamp: new Date().toLocaleTimeString() });
       }, 5000); // Wait in queue for 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [worker.status, taskQueue[0]?.id, worker.id, dispatch, isPaused, replayState.isActive]);
+  }, [worker.status, taskQueue[0]?.id, worker.id, dispatch, isPaused, replayState]);
 
   useEffect(() => {
     const currentTask = worker.currentTask;
-    if (worker.status === 'Working' && currentTask && !isPaused && !replayState.isActive) {
+    if (worker.status === 'Working' && currentTask && !isPaused && !replayState) {
       const timer = setTimeout(() => {
         const randNum = Math.random() * 101;
         const resultValue = JSON.stringify({
@@ -33,7 +33,7 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
       }, 5000); // Simulate processing time for 5 seconds
       return () => clearTimeout(timer);
     }
-  }, [worker.status, worker.currentTask?.id, dispatch, isPaused, replayState.isActive]);
+  }, [worker.status, worker.currentTask?.id, dispatch, isPaused, replayState]);
 
   return (
     <div className="bg-surface-container-high border border-outline-variant rounded-DEFAULT p-1 relative">
@@ -49,15 +49,15 @@ export const WorkerNode: React.FC<{ worker: WorkerNodeState }> = ({ worker }) =>
       <div className={`border rounded-DEFAULT p-3 mt-2 flex flex-col gap-2 bg-surface-dim border-secondary/30`}>
         <div className="flex items-center gap-2">
           <span className="text-secondary text-headline-lg">{worker.status === 'Working' ? 
-              (<i className={`icon-hammer hammer-rotate ${(isPaused || replayState.isActive) ? 'paused' : ''}`}></i>) : 
-              (<div className={`polling-symbol bg-primary ${(isPaused || replayState.isActive) ? 'paused' : ''}`}></div>)}</span>
+              (<i className={`icon-hammer hammer-rotate ${(isPaused || replayState) ? 'paused' : ''}`}></i>) : 
+              (<div className={`polling-symbol bg-primary ${(isPaused || replayState) ? 'paused' : ''}`}></div>)}</span>
           <span className="font-code-sm text-code-sm text-on-surface font-bold">
             {worker.status === 'Working' ? worker.currentTask?.name : 'Polling for tasks...'}
           </span>
         </div>
         {worker.status === 'Working' && (
           <div className='flex flex-col'>
-            <div className={`progress-bar border-tertiary before:bg-tertiary ${(isPaused || replayState.isActive) ? 'paused' : ''}`}></div>
+            <div className={`progress-bar border-tertiary before:bg-tertiary ${(isPaused || replayState) ? 'paused' : ''}`}></div>
             {
             // <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
             //   <div className="bg-secondary h-1.5 rounded-full w-[65%]"></div>

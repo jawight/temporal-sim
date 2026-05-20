@@ -14,7 +14,7 @@ export const TemporalClient: React.FC = () => {
       <div className="p-4 flex flex-col gap-4">
         <p className='justify-center'>-- Workflow Logic --</p>
         {workflowSteps.map((step, index) => {
-          const isHighlighted = replayState.isActive && replayState.highlightTarget === 'definition' && replayState.stepIndex === index;
+          const isHighlighted = replayState && replayState.highlightTarget === 'definition' && replayState.stepIndex === index;
           return (
           <>
           <div key={step.id} className={`bg-surface-container-high border rounded-DEFAULT p-3 flex flex-col gap-3 transition-colors ${isHighlighted ? 'ring-2 ring-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.5)] border-yellow-400' : 'border-outline-variant'}`}>

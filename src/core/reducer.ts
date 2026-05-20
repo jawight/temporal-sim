@@ -5,7 +5,7 @@ export interface SimulationState {
   tasks: TemporalTask[];
   taskQueue: TemporalTask[];
   currentWorkflowId: string | null;
-  replayState: ReplayState;
+  replayState: ReplayState | null;
   eventHistory: EventLog[];
   workers: WorkerNodeState[];
   activeStepId: string | null;
@@ -41,7 +41,7 @@ export const initialState: SimulationState = {
   nextId: 2,
   isPaused: false,
   currentWorkflowId: null,
-  replayState: { isActive: false, stepIndex: 0, historyIndex: 0, highlightTarget: 'definition' }
+  replayState: null
 };
 
 function newEventLog(id: string, timestamp: string, eventType: string, details: string, value: string, stepId?: string): EventLog{
@@ -91,14 +91,14 @@ export function simulationReducer(state: SimulationState, action: SimulationActi
     case 'START_REPLAY':
       return {
         ...state,
-        replayState: { isActive: true, stepIndex: 0, historyIndex: state.eventHistory.length - 1, highlightTarget: 'definition' }
+        replayState: { stepIndex: 0, historyIndex: state.eventHistory.length - 1, highlightTarget: 'definition' }
       };
     case 'ADVANCE_REPLAY': 
       return advanceReplay(state);
     case 'FINISH_REPLAY':
       return {
         ...state,
-        replayState: { isActive: false, stepIndex: 0, historyIndex: -1, highlightTarget: 'definition' }
+        replayState: null
       };
     case 'SCHEDULE_TASK':
       return scheduleTask(state, action.task, action.timestamp);
@@ -202,7 +202,7 @@ function startTask(state: SimulationState, taskId: string, workerId: string, tim
     };
     
     if (isRehydrationNeeded) {
-        return { ...baseState, replayState: { isActive: true, stepIndex: 0, historyIndex: -1, highlightTarget: 'definition' } };
+        return { ...baseState, replayState: { isActive: true, stepIndex: 0, historyIndex: state.eventHistory.length-1, highlightTarget: 'definition' } };
     }
     
     return baseState;
@@ -444,40 +444,58 @@ function runWorkflow(state: SimulationState, timestamp: string): SimulationState
 
 function advanceReplay(state: SimulationState): SimulationState {
   const rpState = state.replayState;
+  if (!rpState) return {
+    ...state,
+    replayState: null
+  };
+
   const step = state.workflowSteps.at(rpState.stepIndex);
 
   if (!step){
     console.error("No valid workflow step found while replaying. StepId: ", rpState.stepIndex);
     return {
       ...state,
-      replayState: { isActive: false, stepIndex: 0, historyIndex: state.eventHistory.length - 1, highlightTarget: 'definition' }
+      replayState: null
     };
   }
 
   const nextLogIdx = nextMatchingLogIndex(rpState.historyIndex, step.id, state.eventHistory);
+  if (nextLogIdx) return {
+    ...state,
+    replayState: {
+      ...rpState,
+      highlightTarget: 'history',
+      historyIndex: nextLogIdx,
+    }
+  };
 
-  if (!nextLogIdx) {
+  // NOTE: If there are no events for this step, then it hasn't run yet and we should finish the replay animation.
+  if (!state.eventHistory.find(e => e.stepId === step.id)) {
     return {
       ...state,
-      replayState: {
-        ...state.replayState,
-        highlightTarget: 'definition',
-        stepIndex: state.replayState.stepIndex + 1,
-      }
-    };
+      replayState: null,
+    }
+  }
+
+  const nextStepIdx = rpState.stepIndex + 1;
+  if (nextStepIdx >= state.workflowSteps.length){
+    return {
+      ...state,
+      replayState: null,
+    }
   }
 
   return {
     ...state,
     replayState: {
-      ...state.replayState,
-      highlightTarget: 'history',
-      historyIndex: nextLogIdx,
+      ...rpState,
+      highlightTarget: 'definition',
+      stepIndex: nextStepIdx,
     }
   };
 }
 
-function nextMatchingLogIndex(startIdx: number, stepId: string, history: EventLog[]): number | undefined {
-  const index = history.slice(startIdx).findIndex(log => log.stepId === stepId);
+function nextMatchingLogIndex(endIdx: number, stepId: string, history: EventLog[]): number | undefined {
+  const index = history.slice(0,endIdx).findLastIndex(log => log.stepId === stepId);
   return index === -1 ? undefined : index;
 }

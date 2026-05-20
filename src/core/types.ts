@@ -34,7 +34,6 @@ export interface WorkerNodeState {
 }
 
 export interface ReplayState {
-  isActive: boolean;
   stepIndex: number;
   historyIndex: number;
   highlightTarget: 'definition' | 'history';
