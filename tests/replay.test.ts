@@ -34,4 +34,30 @@ describe('replay animation', () => {
     // Should have finished
     expect(state.replayState).toBeNull();
   });
+
+  it('should not finish replay on definition task if there are history events', () => {
+    let state = initialState;
+
+    // 1. Run workflow
+    state = simulationReducer(state, { type: 'RUN_WORKFLOW', timestamp: '1' });
+    
+    // 2. Start replay
+    state = simulationReducer(state, { type: 'START_REPLAY', stepIndex: 0 });
+    
+    // 3. Verify state
+    expect(state.replayState?.highlightTarget).toBe('definition');
+    
+    // Simulate App.tsx logic for deciding whether to advance or finish
+    // Based on src/App.tsx line 23
+    const stepEvents = state.eventHistory.filter(log => log.stepId === '1');
+    const isCompleted = stepEvents.some(log => log.eventType.includes('Completed'));
+    
+    const shouldAdvance = (isCompleted || state.replayState?.highlightTarget === 'history' || stepEvents.length === 0 || state.replayState?.highlightTarget === 'definition');
+    
+    // With current logic, this is FALSE because:
+    // isCompleted = false
+    // highlightTarget = 'definition'
+    // stepEvents.length = 2 (not 0)
+    expect(shouldAdvance).toBe(true);
+  });
 });

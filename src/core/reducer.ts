@@ -200,7 +200,7 @@ function startTask(state: SimulationState, taskId: string, workerId: string, tim
     
     const worker = state.workers.find(w => w.id === workerId);
     const isRehydrationNeeded = (task.type === 'Workflow' || task.type === 'Activity') &&
-                                  state.eventHistory.length > 0 &&
+                                  state.eventHistory.length > 3 &&
                                   worker?.cachedWorkflowId !== state.currentWorkflowId;
 
     const baseState: SimulationState = {
@@ -481,27 +481,11 @@ function advanceReplay(state: SimulationState): SimulationState {
     }
   };
 
-  // NOTE: If there are no events for this step, then it hasn't run yet and we should try to move to the next step.
-  if (!state.eventHistory.find(e => e.stepId === step.id)) {
-      const nextStepIdx = rpState.stepIndex + 1;
-      if (nextStepIdx < state.workflowSteps.length) {
-          return {
-              ...state,
-              replayState: {
-                  ...rpState,
-                  highlightTarget: 'definition',
-                  stepIndex: nextStepIdx,
-              }
-          }
-      }
-      return {
-          ...state,
-          replayState: null,
-      }
-  }
-
   const nextStepIdx = rpState.stepIndex + 1;
-  if (nextStepIdx >= state.workflowSteps.length){
+  const nextStep = state.workflowSteps.at(nextStepIdx);
+
+  // NOTE: If there are no events for this step, then it hasn't run yet so stop the replay animation
+  if (!nextStep || !state.eventHistory.find(e => e.stepId === nextStep.id)){
     return {
       ...state,
       replayState: null,

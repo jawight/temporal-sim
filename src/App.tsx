@@ -18,9 +18,8 @@ const App: React.FC = () => {
     const timer = setTimeout(() => {
         const currentStepId = (replayState.stepIndex + 1).toString();
         const stepEvents = eventHistory.filter(log => log.stepId === currentStepId);
-        const isCompleted = stepEvents.some(log => log.eventType.includes('Completed'));
         
-        if (isCompleted || replayState.highlightTarget === 'history' || stepEvents.length === 0) {
+        if (replayState || stepEvents.length === 0) {
              dispatch({ type: 'ADVANCE_REPLAY' });
         } else {
             dispatch({ type: 'FINISH_REPLAY' });
@@ -28,7 +27,7 @@ const App: React.FC = () => {
     }, simulationSpeed);
     
     return () => clearTimeout(timer);
-  }, [replayState?.stepIndex, replayState?.highlightTarget, eventHistory, dispatch, simulationSpeed]);
+  }, [replayState?.stepIndex, replayState?.highlightTarget, replayState?.historyIndex, eventHistory, dispatch, simulationSpeed]);
 
   return (
     <div className="font-body-md text-body-md bg-background text-on-background h-screen flex flex-col overflow-hidden">
